@@ -67,36 +67,33 @@ js-crud-api access crud-php-api with the following functions
 
 
 
-## list conditions
+## list/read conditions
 Conditions are stored as object properties, values as (array of) string/number
 
-- **FILTERING**
+- **FILTERING** ([documentation](https://github.com/mevdschee/php-crud-api#filters))
   ```javascript
   jca.read('aTable', {filter:'field,modifier,value'});
-  or 
   jca.read('aTable', {filter:['field1,modifier1,value1','field2,modifier2,value2']}); // AND
-  or
   jca.read('aTable', {filter:'field1,modifier1,value1',filter1:'field2,modifier2,value2'}); // OR
   ```
-  <ins>Modifier lists</ins> : cs(contain string), sw(start with), ew(end with), eq(equal), lt(lower than), le(lower or equal), ge(greater or equal), gt(greater than), bt(between), in, is(is null)
+  <ins>filters</ins>
+  * cs(contain string), sw(start with), ew(end with), eq(equal), lt(lower than), le(lower or equal), ge(greater or equal), gt(greater than), bt(between), in, is(is null)
+  * filters can be negated by prepending a "n" character (eg "eq" becomes "neq")
   
 - **JOINING** ([documentation](https://github.com/mevdschee/php-crud-api#joins))
     ```javascript
   jca.read('aTable', {join:'table1'});
-  or 
   jca.read('aTable', {join:'table1,table2'}); // nested join
-  or
   jca.read('aTable', {join:['table1','table2']}); // nested join
-  or
   jca.read('aTable', {join:'table1',joinx:'table2'}); // nested join + same level join
-  // x being whatever character (join1, join2, ....)
+  // x being whatever character (eg join1, join2, ....)
   ```
   
   **Note** : the latter case is handle differently compared to the original php-crud-api library, but is somehow homegeneous with the OR filter syntax
 
 
 - **SIZING**
-    ```javascript
+  ```javascript
   jca.read('aTable', {size:10});
   ```
 - **PAGINATING**
@@ -107,15 +104,12 @@ Conditions are stored as object properties, values as (array of) string/number
 - **COLUMN SELECTION**
     ```javascript
   jca.read('aTable', {include:'field'});
-  or
   jca.read('aTable', {include:['field1,field2']});
-  or
   jca.read('aTable', {exclude:['field1']});
   ```
 - **ORDERING**
   ```javascript
   jca.read('aTable', {order:'field,desc'});
-  or
   jca.read('aTable', {order:['field1,desc','field2']});
   ```
 
@@ -127,7 +121,7 @@ Conditions are stored as object properties, values as (array of) string/number
   * /columns
   * /status/ping
   
-- Only DBAuth is implemented (not basic and JWT ones)
+- Only DBAuth is implemented (not basic and JWT authentications)
 
 ## Tests
 
