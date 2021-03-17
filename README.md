@@ -17,7 +17,7 @@ jca.read('aTable');
 ```html
 <script src="min.js"></script>
 <script>
-    const jscrudapi=jscrudapi('urlToApi.php');
+    const jca=jscrudapi('urlToApi.php');
     jca.read('aTable');
 </script>
 ```
