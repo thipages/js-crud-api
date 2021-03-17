@@ -46,7 +46,7 @@ pcajs access crud-php-api with the following functions
 | list (table, conditions={})   | ```list('atable')```           |
 |                               | ```list('atable', {filter:'id eq 1'})``` |
 |                               | ```list('atable', {filter:['id eq 1','id eq 2']})``` |
-|                               | [other list conditions here](#list-conditions))
+|                               | [other list conditions here](#list-conditions)
 | create (table,data)           | ```create('atable', {field:'value'})```      |
 |                               | ```create('atable', [{field:'value1'},{field:'value2'}])```      |
 | update (table,idOrList,data)  | ```update('atable',1 {field:'newValue'})```      |
@@ -58,11 +58,11 @@ pcajs access crud-php-api with the following functions
 
 - **Authentication functions** ([see documentation](https://github.com/mevdschee/php-crud-api#database-authentication))
 
-* ```register(username,password)```
-* ```login (username,password)```
-* ```password (username,password,newPassowrd)```
-* ```logout()```
-* ```me()```
+  * ```register(username,password)```
+  * ```login (username,password)```
+  * ```password (username,password,newPassowrd)```
+  * ```logout()```
+  * ```me()```
 
 
 
