@@ -38,27 +38,27 @@ pcajs access crud-php-api with the following functions
 - **CRUD functions**
 
 | CRUD functions                   | examples                       |
-| -------------------------------- | ------------------------------ |
-| read (table,ids, joins={})       | ```read('atable', 1)```        |
-|                                  | ```read('atable', '1,2')```    |
-|                                  | ```read('atable', [1,2])```    |
-|                                  | ```read('atable', 1,{join:'anotherTable'})```    |
-| list (table, conditions={})      | ```list('atable')```           |
-|                                  | ```list('atable', {filter:'id eq 1'})``` |
-|                                  | ```list('atable', {filter:['id eq 1','id eq 2']})``` |
-|                                  | [other list conditions here](#list-conditions))
-| create (tableName,data)          | ```create('atable', {field:'value'})```      |
-|                                  | ```create('atable', [{field:'value1'},{field:'value2'}])```      |
-| update (tableName,idOrList,data) | ```update('atable',1 {field:'newValue'})```      |
-|                                  | ```update('atable','1,2' [{field:'newValue1'},{field:'newValue2'}])```      |
-|                                  | ```update('atable',[1,2] [{field1:'newValue1'},{field2:'newValue2'}])```      |
-| delete (tableName,idOrList)      | ```delete('atable',1)```      |
-|                                  | ```delete('atable','1,2')```  |
-|                                  | ```delete('atable',[1,2])```  |
+| ----------------------------- | ------------------------------ |
+| read (table,ids, joins={})    | ```read('atable', 1)```        |
+|                               | ```read('atable', '1,2')```    |
+|                               | ```read('atable', [1,2])```    |
+|                               | ```read('atable', 1,{join:'anotherTable'})```    |
+| list (table, conditions={})   | ```list('atable')```           |
+|                               | ```list('atable', {filter:'id eq 1'})``` |
+|                               | ```list('atable', {filter:['id eq 1','id eq 2']})``` |
+|                               | [other list conditions here](#list-conditions))
+| create (table,data)           | ```create('atable', {field:'value'})```      |
+|                               | ```create('atable', [{field:'value1'},{field:'value2'}])```      |
+| update (table,idOrList,data)  | ```update('atable',1 {field:'newValue'})```      |
+|                               | ```update('atable','1,2' [{field:'newValue1'},{field:'newValue2'}])```      |
+|                               | ```update('atable',[1,2] [{field1:'newValue1'},{field2:'newValue2'}])```      |
+| delete (table,idOrList)       | ```delete('atable',1)```      |
+|                               | ```delete('atable','1,2')```  |
+|                               | ```delete('atable',[1,2])```  |
 
 - **Authentication functions** ([see documentation](https://github.com/mevdschee/php-crud-api#database-authentication))
 
-* ```register`(username,password)```
+* ```register(username,password)```
 * ```login (username,password)```
 * ```password (username,password,newPassowrd)```
 * ```logout()```
@@ -121,11 +121,13 @@ Conditions are stored as object properties, values as (array of) string/number
 
 ## Limitations
 
-- endpoints not (yet) implemented
+- Endpoints not (yet) implemented
   * /openapi
   * /geojson
   * /columns
   * /status/ping
+  
+- Only DBAuth is implemented (not basic and JWT ones)
   
 - Tests have been performed on SQLite 3.35.1 only
 
