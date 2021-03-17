@@ -1,6 +1,6 @@
-# js-crud-api
+# JS-CRUD-API
 
-JavaScript API for [php-crud-api](https://github.com/mevdschee/php-crud-api)
+JavaScript client library for the API of [PHP-CRUD-API](https://github.com/mevdschee/php-crud-api)
 
 
 # Installation
@@ -29,11 +29,15 @@ All functions (see API) are promise-based
         result=>console.log(result)    
     ).catch (
         error=>console.log(error)
-    );   
+    );
 ```
+Errors
+- PHP-CRUD-API error codes and related messages are listed [here](https://github.com/mevdschee/php-crud-api#errors)
+- An generic javascript related error code has been added : -1 (eg fetch network error)
+
 ## API
 
-js-crud-api access crud-php-api with the following functions
+JS-CRUD-API accesses PHP-CRUD-API with the following functions
 
 - **CRUD functions**
 
@@ -125,8 +129,8 @@ Conditions are stored as object properties, values as (array of) string/number
 
 ## Tests
 
-- on php-crud-api v2.11.2
-- on SQLite 3.35.1 only
+- PHP-CRUD-API v2.11
+- SQLite v3.35.1
 
 
 
