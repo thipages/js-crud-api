@@ -102,21 +102,21 @@ Conditions are stored as object properties, values as (array of) string/number
 - **PAGINATING**
   ```javascript
   pca.read('aTable', {page:'1,50'});
-  pca.read('aTable', {page:1}); // todo : cf doc
+  pca.read('aTable', {page:1});
   ```
 - **COLUMN SELECTION**
     ```javascript
   pca.read('aTable', {include:'field'});
   or
-  pca.read('aTable', {include:['field1,field2']}); // todo : cf doc
+  pca.read('aTable', {include:['field1,field2']});
   or
-  pca.read('aTable', {exclude:['field1']}); // todo : cf doc
+  pca.read('aTable', {exclude:['field1']});
   ```
 - **ORDERING**
   ```javascript
   pca.read('aTable', {order:'field,desc'});
   or
-  pca.read('aTable', {order:['field1,desc','field2']}); // todo : cf doc
+  pca.read('aTable', {order:['field1,desc','field2']});
   ```
 
 ## Limitations
@@ -131,8 +131,8 @@ Conditions are stored as object properties, values as (array of) string/number
 
 ## Tests
 
-- Tests performed on PHP-CRUD-API v2.11.2
-- Tests have been performed on SQLite 3.35.1 only
+- on PHP-CRUD-API v2.11.2
+- on SQLite 3.35.1 only
 
 
 
