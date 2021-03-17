@@ -10,7 +10,6 @@ export default async (promises, observer)=> {
             result=e;
             success=false;
         }
-        console.log('serialp',success, result)
         results.push([success,result]);
         if (!next(i,success,result)) break;
     }

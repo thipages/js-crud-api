@@ -59,7 +59,6 @@ export default(path,queries)=>new Promise (
         const q=queries(jca(path));
         fetch (path+"?reset_db").then(
             x=>x.text().then(x=>{
-                console.log(x);
                 run(q).then (x=>{
                     resolve()
                 });
