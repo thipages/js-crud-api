@@ -128,7 +128,10 @@ Conditions are stored as object properties, values as (array of) string/number
   * /status/ping
   
 - Only DBAuth is implemented (not basic and JWT ones)
-  
+
+## Tests
+
+- Tests performed on PHP-CRUD-API v2.11.2
 - Tests have been performed on SQLite 3.35.1 only
 
 
