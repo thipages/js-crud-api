@@ -30,6 +30,7 @@ const pagination_expected=JSON.stringify([...Array(1).fill('').keys()].map(v=>v+
  * - pacajs allows to treat batch operations as string (1,2) or arrays [1,2]
  * - trabsversal joins can not be implemented as the original API (join=table1,table2&join=table3).
  * They have been implemented as {join:'table1,table2',join1:'table3'} close to the filter formalism
+ * - list and read conditions are not clear
  * 
  */
 export default (pca)=>[
