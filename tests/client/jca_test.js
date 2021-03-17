@@ -1,5 +1,5 @@
 import serialp from "./serialp.js";
-import pcajs from "./../../esm/index.js";
+import jca from "./../../esm/index.js";
 
 const getTestResult=(expected,index,success,result)=> {
     const isOk_expected=!expected.startsWith('#');
@@ -56,8 +56,7 @@ const run=(queries)=>serialp(
 );
 export default(path,queries)=>new Promise (
     resolve=>{
-        const q=queries(pcajs(path));
-        console.log('start');
+        const q=queries(jca(path));
         fetch (path+"?reset_db").then(
             x=>x.text().then(x=>{
                 console.log(x);

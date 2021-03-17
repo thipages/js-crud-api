@@ -1,7 +1,7 @@
 {
-  "name": "pcajs",
-  "version": "0.0.1",
-  "description": "JavaScript connector for PHP-CRUD-API",
+  "name": "js-crud-api",
+  "version": "0.1.0",
+  "description": "JavaScript API for php-crud-api",
   "keywords": [
     "php-crud-api",
     "javascript",
@@ -14,7 +14,7 @@
   "module": "esm/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thipages/pcajs.git"
+    "url": "git+https://github.com/thipages/js-crud-api.git"
   },
   "dependencies": {},
   "devDependencies": {

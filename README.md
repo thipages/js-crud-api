@@ -1,31 +1,31 @@
-# pcajs
+# js-crud-api
 
-JavaScript API for [PHP-CRUD-API](https://github.com/mevdschee/php-crud-api)
+JavaScript API for [php-crud-api](https://github.com/mevdschee/php-crud-api)
 
 
 # Installation
 
 
-- via npm : _npm i pcajs_
+- via npm : _npm i js-crud-api_
 
 ```javascript
-import pcajs from 'pcajs';
-const pca=pcajs('urlToApi.php');
-pca.read('aTable');
+import jscrudapi from 'js-crud-api';
+const jca=jscrudapi('urlToApi.php');
+jca.read('aTable');
 ```
 - via HTML
 ```html
 <script src="min.js"></script>
 <script>
-    const pca=pcajs('urlToApi.php');
-    pca.read('aTable');
+    const jscrudapi=jscrudapi('urlToApi.php');
+    jca.read('aTable');
 </script>
 ```
 
 # Promise-based
 All functions (see API) are promise-based
 ```javascript
-    pca.create('atable', {field:'value'}).then(
+    jca.create('atable', {field:'value'}).then(
         result=>console.log(result)    
     ).catch (
         error=>console.log(error)
@@ -33,7 +33,7 @@ All functions (see API) are promise-based
 ```
 ## API
 
-pcajs access crud-php-api with the following functions
+js-crud-api access crud-php-api with the following functions
 
 - **CRUD functions**
 
@@ -72,23 +72,23 @@ Conditions are stored as object properties, values as (array of) string/number
 
 - **FILTERING**
   ```javascript
-  pca.read('aTable', {filter:'field,modifier,value'});
+  jca.read('aTable', {filter:'field,modifier,value'});
   or 
-  pca.read('aTable', {filter:['field1,modifier1,value1','field2,modifier2,value2']}); // AND
+  jca.read('aTable', {filter:['field1,modifier1,value1','field2,modifier2,value2']}); // AND
   or
-  pca.read('aTable', {filter:'field1,modifier1,value1',filter1:'field2,modifier2,value2'}); // OR
+  jca.read('aTable', {filter:'field1,modifier1,value1',filter1:'field2,modifier2,value2'}); // OR
   ```
   <ins>Modifier lists</ins> : cs(contain string), sw(start with), ew(end with), eq(equal), lt(lower than), le(lower or equal), ge(greater or equal), gt(greater than), bt(between), in, is(is null)
   
 - **JOINING** ([documentation](https://github.com/mevdschee/php-crud-api#joins))
     ```javascript
-  pca.read('aTable', {join:'table1'});
+  jca.read('aTable', {join:'table1'});
   or 
-  pca.read('aTable', {join:'table1,table2'}); // nested join
+  jca.read('aTable', {join:'table1,table2'}); // nested join
   or
-  pca.read('aTable', {join:['table1','table2']}); // nested join
+  jca.read('aTable', {join:['table1','table2']}); // nested join
   or
-  pca.read('aTable', {join:'table1',joinx:'table2'}); // nested join + same level join
+  jca.read('aTable', {join:'table1',joinx:'table2'}); // nested join + same level join
   // x being whatever character (join1, join2, ....)
   ```
   
@@ -97,26 +97,26 @@ Conditions are stored as object properties, values as (array of) string/number
 
 - **SIZING**
     ```javascript
-  pca.read('aTable', {size:10});
+  jca.read('aTable', {size:10});
   ```
 - **PAGINATING**
   ```javascript
-  pca.read('aTable', {page:'1,50'});
-  pca.read('aTable', {page:1});
+  jca.read('aTable', {page:'1,50'});
+  jca.read('aTable', {page:1});
   ```
 - **COLUMN SELECTION**
     ```javascript
-  pca.read('aTable', {include:'field'});
+  jca.read('aTable', {include:'field'});
   or
-  pca.read('aTable', {include:['field1,field2']});
+  jca.read('aTable', {include:['field1,field2']});
   or
-  pca.read('aTable', {exclude:['field1']});
+  jca.read('aTable', {exclude:['field1']});
   ```
 - **ORDERING**
   ```javascript
-  pca.read('aTable', {order:'field,desc'});
+  jca.read('aTable', {order:'field,desc'});
   or
-  pca.read('aTable', {order:['field1,desc','field2']});
+  jca.read('aTable', {order:['field1,desc','field2']});
   ```
 
 ## Limitations
@@ -131,7 +131,7 @@ Conditions are stored as object properties, values as (array of) string/number
 
 ## Tests
 
-- on PHP-CRUD-API v2.11.2
+- on php-crud-api v2.11.2
 - on SQLite 3.35.1 only
 
 
