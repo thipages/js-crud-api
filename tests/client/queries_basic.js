@@ -21,18 +21,7 @@ const notes=[
 // todo improve paginatino tests
 const pagination=Array(1).fill('').map(v=>({foo:1}));
 const pagination_expected=JSON.stringify([...Array(1).fill('').keys()].map(v=>v+1));
-// todo : lessons learned from tests, espacially when wrong with conditions
-/**
- * 
- * - include restricts fields but not FK fields
- * - invalid conditions are discarded, this may lead to unexpected result. Why not implementing a strict mode?
- * - register does not log in, this could be an option
- * - pacajs allows to treat batch operations as string (1,2) or arrays [1,2]
- * - trabsversal joins can not be implemented as the original API (join=table1,table2&join=table3).
- * They have been implemented as {join:'table1,table2',join1:'table3'} close to the filter formalism
- * - list and read conditions are not clear
- * - The original name was pcajs, but npm refuse to register, being too close to pca-js? I renamed it js-crud-api
- */
+
 export default (jca)=>[
     [
         ()=>jca.create('user',users[0]),
