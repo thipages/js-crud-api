@@ -2,12 +2,12 @@ const castArray=(a)=>Array.isArray(a)?a:[a];
 const toComma=a=>castArray(a).join(',');
 const matchJoin=(key)=>key!=='join' && key.substr(0,4)==='join';
 //const matchJoins=(key)=>key==='join' || key.substr(0,4)==='join';
-const filtered =(raw,p)=> Object.keys(raw)
+/*const filtered =(raw,p)=> Object.keys(raw)
     .filter(key => p(key))
     .reduce((obj, key) => {
         obj[key] = raw[key];
         return obj;
-    }, {});
+    }, {});*/
 const query=(o) => {
     let args=[];
     Object.keys(o).forEach((key)=> {
@@ -64,11 +64,11 @@ export default (baseUrl, config={})=>{
             });
     };
     const _create=(table,data)=>_fetch('POST',data,['records',table]);
-    const _read=(table,ids,joins)=>_fetch(
-        'GET',
-        null,
-        ['records',table,toComma(ids),query(joins)]//filtered(joins,matchJoins))]
-    );
+    const _read=(table,ids,joins)=>{
+        let parts=['records',table];
+        if (ids) parts=[...parts, toComma(ids),query(joins)];//filtered(joins,matchJoins))]
+        return _fetch('GET', null, parts);
+    }
     const _list=(table, conditions)=> {
         let add=conditions
             ? query(conditions)

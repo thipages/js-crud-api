@@ -19,14 +19,19 @@ const notes=[
     {note:'note3', title:'multi-ordering', user_id: 1}
 ];
 // todo improve paginatino tests
-const pagination=Array(1).fill('').map(v=>({foo:1}));
+/*const pagination=Array(1).fill('').map(v=>({foo:1}));
 const pagination_expected=JSON.stringify([...Array(1).fill('').keys()].map(v=>v+1));
-
+*/
 export default (jca)=>[
     [
         ()=>jca.create('user',users[0]),
         1,
         'Creation of 1 user'
+    ],
+    [
+        ()=>jca.read('user'),
+        '{"records":[{"id":1,"login":"tit1","pass":"tit1pass"}]}',
+        'Read the user created (no arguments)'
     ],
     [
         ()=>jca.create('user',[users[1],users[2]]),
