@@ -1,8 +1,10 @@
 {
     "require": {
-        "mevdschee/php-crud-api": "^v2.11.2",
+        "mevdschee/php-crud-api": "^v2.11.3",
         "thipages/quickdb": "^0.4.2",
         "thipages/sqlitecli": "^0.2.0",
         "thipages/jsbuild": "^0.1.1"
-    }
+    },
+    "name": "thipages/js-crud-api",
+    "description": ""
 }

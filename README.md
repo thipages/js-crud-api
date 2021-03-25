@@ -2,6 +2,8 @@
 
 JavaScript client library for the API of [PHP-CRUD-API](https://github.com/mevdschee/php-crud-api)
 
+### Version 0.2.0 Changes
+**JOINS** : better API map with PHP-CRUD-API, no more joinx, see discussion [here](https://github.com/mevdschee/php-crud-api/issues/770#issuecomment-802204560)
 
 # Installation
 
@@ -80,21 +82,17 @@ Conditions are stored as object properties, values as (array of) string/number
   jca.read('aTable', {filter:['field1,modifier1,value1','field2,modifier2,value2']}); // AND
   jca.read('aTable', {filter:'field1,modifier1,value1',filter1:'field2,modifier2,value2'}); // OR
   ```
-  <ins>filters</ins>
+  <ins>Modifiers</ins>
   * cs(contain string), sw(start with), ew(end with), eq(equal), lt(lower than), le(lower or equal), ge(greater or equal), gt(greater than), bt(between), in, is(is null)
   * filters can be negated by prepending a "n" character (eg "eq" becomes "neq")
   
 - **JOINING** ([documentation](https://github.com/mevdschee/php-crud-api#joins))
     ```javascript
   jca.read('aTable', {join:'table1'});
-  jca.read('aTable', {join:'table1,table2'}); // nested join
-  jca.read('aTable', {join:['table1','table2']}); // nested join
-  jca.read('aTable', {join:'table1',joinx:'table2'}); // nested join + same level join
-  // x being whatever character (eg join1, join2, ....)
+  jca.read('aTable', {join:'table1,table2'});         // path : atable>table1>table2
+  jca.read('aTable', {join:['table1','table2']});     // path : atable>table1>table2
+  jca.read('aTable', {join:[['table1'],['table2']]}); // paths: atable>table1 and atable>table2
   ```
-  
-  **Note** : the latter case is handle differently compared to the original php-crud-api library, but is somehow homegeneous with the OR filter syntax
-
 
 - **SIZING**
   ```javascript
@@ -129,7 +127,7 @@ Conditions are stored as object properties, values as (array of) string/number
 
 ## Tests
 
-- PHP-CRUD-API v2.11
+- PHP-CRUD-API v2.11.3
 - SQLite v3.35.1
 
 
