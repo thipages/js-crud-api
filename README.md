@@ -103,7 +103,7 @@ Conditions are stored as object properties, values as (array of) string/number
   jca.read('aTable', {page:'1,50'});
   jca.read('aTable', {page:1});
   ```
-- **COLUMN SELECTION**
+- **SELECTING COLUMN**
     ```javascript
   jca.read('aTable', {include:'field'});
   jca.read('aTable', {include:['field1,field2']});
