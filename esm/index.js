@@ -1,45 +1,21 @@
 const castArray=a=>Array.isArray(a)?a:[a];
-const matchJoin=(key)=>key!=='join' && key.substr(0,4)==='join';
 const prefix=p=>s=>p+s;
 const join=(d=',')=>a=>castArray(a).join(d);
 const mapN=a=>(...f)=>f.reduce((acc,v)=>acc.map(v),a);
-const pca_join=s=>join('&')(
-    mapN(castArray(s))(join(),prefix('join='))
-);
-//const matchJoins=(key)=>key==='join' || key.substr(0,4)==='join';
-/*const filtered =(raw,p)=> Object.keys(raw)
-    .filter(key => p(key))
-    .reduce((obj, key) => {
-        obj[key] = raw[key];
-        return obj;
-    }, {});*/
+const pca_join=(key,a)=>mapN(castArray(a))(join(),prefix(key+'='));
 const push=(a,...v)=>{a.push(...v);return a;}
 const query=(conditions) => '?'+Object.keys(conditions)
     .reduce((acc,key)=>
         push(acc,...dispatch(key,castArray(conditions[key])))
     ,[]).join('&');
 const nonMultipleConditions=['include','exclude','page','size'];
-const dispatch=(key, a)=>{
-    let values=[];
-    /**
-     * php-crud-api syntax for multiple separated join (join=table1,table2&join=table3)
-     * is incompatible with the current js API
-     */
-    if (matchJoin(key)) key='join';
-    /**
-     * filter/filterx conditions works whatever order
-     */
-    if (key==='join') {
-        values= [key+"="+a.join(',')];
-    } else if (nonMultipleConditions.indexOf(key)!==-1) {
-        values= [key+"="+a.join(',')];        
-    } else {
-        values=a.map(v=>{
+const dispatch=(key, a)=>key==='join'
+    ? pca_join(key,a)
+    : nonMultipleConditions.indexOf(key)!==-1
+        ? [key+"="+a.join(',')]
+        : a.map(v=>{ // todo : should list the cases (first need to implement error system)
             return key+'='+(Array.isArray(v)?v.join(','):v)
         });
-    }
-    return values;
-};
 export default (baseUrl, config={})=>{
     // todo headers Content-Type? application/json vs multipart/form-data ...
     const headers = {};

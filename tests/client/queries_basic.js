@@ -97,7 +97,12 @@ export default (jca)=>[
         ()=>jca.read('user', [1,2]),
         '[{"id":1,"login":"tit1","pass":"tit1pass"},{"id":2,"login":"tit2","pass":"tit2pass"}]',
         'Read user id 1/2 as array'
-    ],
+    ]/*,
+    [
+        ()=>jca.read('user', 2, {join:'note',include:'user.id,note.title'}),
+        '{"id":2,"note":[{"title":"title21","user_id":2}]}',
+        'Read user id 1 and join note table'
+    ]*/,
     [
         ()=>jca.read('user', 2, {join:'note',include:'user.id,note.title'}),
         '{"id":2,"note":[{"title":"title21","user_id":2}]}',
@@ -106,12 +111,27 @@ export default (jca)=>[
     [
         ()=>jca.list('user', {filter:'pass,cs,pass'}),
         '{"records":[{"id":1,"login":"tit1","pass":"tit1pass"},{"id":2,"login":"tit2","pass":"tit2pass"},{"id":3,"login":"tit3","pass":"tit3pass"}]}',
-        'Read with one filter made of field,cs,val'
+        'Read with one filter made of String field,cs,val'
+    ],
+    [
+        ()=>jca.list('user', {filter:['pass','cs','pass']}),
+        '{"records":[{"id":1,"login":"tit1","pass":"tit1pass"},{"id":2,"login":"tit2","pass":"tit2pass"},{"id":3,"login":"tit3","pass":"tit3pass"}]}',
+        'Read with one filter made of Array [field,cs,val]'
     ],
     [
         ()=>jca.list('user', {filter:['pass,cs,pass','login,eq,tit1']}),
         '{"records":[{"id":1,"login":"tit1","pass":"tit1pass"}]}',
         'Read with a filters array &lt; field1,cs,val1 , field2,eq,val2 &gt; (AND)'
+    ],
+    [
+        ()=>jca.list('user', {filter:[['pass','cs','pass'],'login,eq,tit1']}),
+        '{"records":[{"id":1,"login":"tit1","pass":"tit1pass"}]}',
+        'Read with a filters mixed array of array/string &lt; [field1,cs,val1] , field2,eq,val2 &gt; (AND)'
+    ],
+    [
+        ()=>jca.list('user', {filter:[['pass','cs','pass'],['login','eq','tit1']]}),
+        '{"records":[{"id":1,"login":"tit1","pass":"tit1pass"}]}',
+        'Read with a filters array of array &lt; [field1,cs,val1] , [field2,eq,val2] &gt; (AND)'
     ],
     [
         ()=>jca.list('user', {filter1:['pass,cs,pass','login,eq,tit1']}),
@@ -169,18 +189,33 @@ export default (jca)=>[
         'Read with pagination conditions as array'
     ],
     [
-        ()=>jca.list('user', {join:'note', include:'note.id,user.id'}), // todo : did not expect user_id field
+        ()=>jca.list('user', {join:'note', include:'note.id,user.id'}), // Important: fk fields are always returned
         '{"records":[{"id":1,"note":[{"id":1,"user_id":1},{"id":10,"user_id":1},{"id":11,"user_id":1}]},{"id":2,"note":[{"id":2,"user_id":2}]},{"id":3,"note":[{"id":3,"user_id":3},{"id":9,"user_id":3}]}]}',
-        'Read with user/note join'
-    ],
+        'Read with  join, path : user/note'
+    ],/*
     [
-        ()=>jca.list('user', {join:'note',join1:'person', include:'note.id,user.id'}), // todo : did not expect user_id field
+        ()=>jca.list('user', {join:'note',join1:'person', include:'note.id,user.id'}),
         '{"records":[{"id":1,"note":[{"id":1,"user_id":1},{"id":10,"user_id":1},{"id":11,"user_id":1}],"person":[{"user_id":1}]},{"id":2,"note":[{"id":2,"user_id":2}],"person":[{"user_id":2}]},{"id":3,"note":[{"id":3,"user_id":3},{"id":9,"user_id":3}],"person":[{"user_id":3}]}]}',
         'Read with user/note join'
     ],
     [
-        ()=>jca.list('user', {join:'note,sub_note',join1:'person', include:'note.id,user.id,sub_note.id'}), // todo : did not expect user_id field
+        ()=>jca.list('user', {join:'note,sub_note',join1:'person', include:'note.id,user.id,sub_note.id'}),
         '{"records":[{"id":1,"note":[{"id":1,"user_id":1,"sub_note":[{"id":1,"note_id":1}]},{"id":10,"user_id":1,"sub_note":[]},{"id":11,"user_id":1,"sub_note":[]}],"person":[{"user_id":1}]},{"id":2,"note":[{"id":2,"user_id":2,"sub_note":[]}],"person":[{"user_id":2}]},{"id":3,"note":[{"id":3,"user_id":3,"sub_note":[]},{"id":9,"user_id":3,"sub_note":[]}],"person":[{"user_id":3}]}]}',
-        'Read with user/note join'
+        'Read with user/note join - OLD TESTS - TO REMOVE'
+    ]*/
+    [
+        ()=>jca.list('user', {join:['note','person'], include:'note.id,user.id'}),
+        '{"records":[{"id":1,"note":[{"id":1,"user_id":1},{"id":10,"user_id":1},{"id":11,"user_id":1}],"person":[{"user_id":1}]},{"id":2,"note":[{"id":2,"user_id":2}],"person":[{"user_id":2}]},{"id":3,"note":[{"id":3,"user_id":3},{"id":9,"user_id":3}],"person":[{"user_id":3}]}]}',
+        'Read with join, path : user/note/person'
+    ],
+    [
+        ()=>jca.list('user', {join:[['note,sub_note'],'person'], include:'note.id,user.id,sub_note.id'}),
+        '{"records":[{"id":1,"note":[{"id":1,"user_id":1,"sub_note":[{"id":1,"note_id":1}]},{"id":10,"user_id":1,"sub_note":[]},{"id":11,"user_id":1,"sub_note":[]}],"person":[{"user_id":1}]},{"id":2,"note":[{"id":2,"user_id":2,"sub_note":[]}],"person":[{"user_id":2}]},{"id":3,"note":[{"id":3,"user_id":3,"sub_note":[]},{"id":9,"user_id":3,"sub_note":[]}],"person":[{"user_id":3}]}]}',
+        'Read with join, paths : user/note/sub_note and user/person (string version)'
+    ],
+    [
+        ()=>jca.list('user', {join:[['note,sub_note'],['person']], include:'note.id,user.id,sub_note.id'}),
+        '{"records":[{"id":1,"note":[{"id":1,"user_id":1,"sub_note":[{"id":1,"note_id":1}]},{"id":10,"user_id":1,"sub_note":[]},{"id":11,"user_id":1,"sub_note":[]}],"person":[{"user_id":1}]},{"id":2,"note":[{"id":2,"user_id":2,"sub_note":[]}],"person":[{"user_id":2}]},{"id":3,"note":[{"id":3,"user_id":3,"sub_note":[]},{"id":9,"user_id":3,"sub_note":[]}],"person":[{"user_id":3}]}]}',
+        'Read with join, paths : user/note/sub_note and user/person (Array version)'
     ]
 ];
