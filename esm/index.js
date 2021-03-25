@@ -1,6 +1,11 @@
-const castArray=(a)=>Array.isArray(a)?a:[a];
-const toComma=a=>castArray(a).join(',');
+const castArray=a=>Array.isArray(a)?a:[a];
 const matchJoin=(key)=>key!=='join' && key.substr(0,4)==='join';
+const prefix=p=>s=>p+s;
+const join=(d=',')=>a=>castArray(a).join(d);
+const mapN=a=>(...f)=>f.reduce((acc,v)=>acc.map(v),a);
+const pca_join=s=>join('&')(
+    mapN(castArray(s))(join(),prefix('join='))
+);
 //const matchJoins=(key)=>key==='join' || key.substr(0,4)==='join';
 /*const filtered =(raw,p)=> Object.keys(raw)
     .filter(key => p(key))
@@ -8,13 +13,10 @@ const matchJoin=(key)=>key!=='join' && key.substr(0,4)==='join';
         obj[key] = raw[key];
         return obj;
     }, {});*/
-const query=(o) => {
-    let args=[];
-    Object.keys(o).forEach((key)=> {
-        args.push(...dispatch(key,castArray(o[key])));
-    });
-    return '?'+args.join('&');
-};
+const query=(conditions) => '?'+Object.keys(conditions).reduce((acc,key)=> {
+        acc.push(...dispatch(key,castArray(conditions[key])));
+        return acc;
+    },[]).join('&');
 const dispatch=(key, a)=>{
     let values=[];
     /**
@@ -23,7 +25,7 @@ const dispatch=(key, a)=>{
      */
     if (matchJoin(key)) key='join';
     /**
-     * filter/filterx conditions works both ways
+     * filter/filterx conditions works whatever order
      */
     if (['include','exclude','page','join'].indexOf(key)===-1) {
         a.forEach((item)=> {
@@ -54,7 +56,6 @@ export default (baseUrl, config={})=>{
     const _fetch=(method,body, parts)=> {
         return fetch(url(parts), _config(method, body))
             .then(async response =>{
-                //console.log(response);
                 const data=await response.json();
                 return (response.status === 200 || response.ok)
                     ? Promise.resolve(data)
@@ -63,26 +64,18 @@ export default (baseUrl, config={})=>{
                 return Promise.reject(e.code?e:{code:-1, message:e.message})
             });
     };
-    const _create=(table,data)=>_fetch('POST',data,['records',table]);
-    const _read=(table,ids,joins)=>{
-        let parts=['records',table];
-        if (ids) parts=[...parts, toComma(ids),query(joins)];//filtered(joins,matchJoins))]
-        return _fetch('GET', null, parts);
-    }
-    const _list=(table, conditions)=> {
-        let add=conditions
-            ? query(conditions)
-            : '';
-        let parts=['records',table];
-        if (add!=='') parts.push(add);
-        return _fetch('GET',null,parts);
-    };
+    const _readOrList=([part1,conditions])=>_fetch(
+        'GET',
+        null,
+        ['records', ...part1].concat(conditions ? [query(conditions)] : [])
+    );
     return {
-        list:(table,conditions={})=>_list(table,conditions),
-        read:(table,ids,joins={})=>_read(table,ids,joins),
-        create:(table,data)=>_create(table,data),
-        update:(table,idOrList,data)=>_fetch('PUT',data,['records',table,toComma(idOrList)]),
-        delete:(table,idOrList)=>_fetch('DELETE',null,['records',table,toComma(idOrList)]),
+        list:(table,conditions={})=>_readOrList([[table],conditions]),
+        // todo : a read method without ids will be considered as a list operation by php-crud-api. JS error?
+        read:(table,ids,conditions={})=>_readOrList(ids?[[table,join()(ids)],conditions]:[[table]]),
+        create:(table,data)=>_fetch('POST',data,['records',table]),
+        update:(table,idOrList,data)=>_fetch('PUT',data,['records',table,join()(idOrList)]),
+        delete:(table,idOrList)=>_fetch('DELETE',null,['records',table,join()(idOrList)]),
         register:(username,password)=>_fetch('POST', {username,password},['register']),
         login:(username,password)=>_fetch('POST', {username,password},['login']),
         logout:()=>_fetch('POST',{},['logout']),
