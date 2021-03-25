@@ -13,10 +13,12 @@ const pca_join=s=>join('&')(
         obj[key] = raw[key];
         return obj;
     }, {});*/
-const query=(conditions) => '?'+Object.keys(conditions).reduce((acc,key)=> {
-        acc.push(...dispatch(key,castArray(conditions[key])));
-        return acc;
-    },[]).join('&');
+const push=(a,...v)=>{a.push(...v);return a;}
+const query=(conditions) => '?'+Object.keys(conditions)
+    .reduce((acc,key)=>
+        push(acc,...dispatch(key,castArray(conditions[key])))
+    ,[]).join('&');
+const nonMultipleConditions=['include','exclude','page','size'];
 const dispatch=(key, a)=>{
     let values=[];
     /**
@@ -27,12 +29,14 @@ const dispatch=(key, a)=>{
     /**
      * filter/filterx conditions works whatever order
      */
-    if (['include','exclude','page','join'].indexOf(key)===-1) {
-        a.forEach((item)=> {
-            values.push(key+'='+item);
-        })
-    } else {
+    if (key==='join') {
         values= [key+"="+a.join(',')];
+    } else if (nonMultipleConditions.indexOf(key)!==-1) {
+        values= [key+"="+a.join(',')];        
+    } else {
+        values=a.map(v=>{
+            return key+'='+(Array.isArray(v)?v.join(','):v)
+        });
     }
     return values;
 };
