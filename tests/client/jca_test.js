@@ -41,12 +41,13 @@ const run=(queries)=>serialp(
     queries.map(v=>v[0]),(index,success,result)=> {
         const expected=""+queries[index][1];
         const comment=queries[index][2];
+        const transform=queries[index][3]
         let next, html;
         if (comment.substring(0,6)==='FORCED') {
             html=getForcedHtml(index,comment);
             next= true;
         } else {
-            const results=getTestResult(expected,index,success,result);
+            const results=getTestResult(expected,index,success,transform?transform(result):result);
             html=getRegularHtml(index, success,...results, comment);
             next= results[0];
         }

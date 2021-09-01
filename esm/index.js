@@ -1,3 +1,4 @@
+// todo : encodeURIComponent usage?
 const castArray=a=>Array.isArray(a)?a:[a];
 const prefix=p=>s=>p+s;
 const join=(d=',')=>a=>castArray(a).join(d);
@@ -61,5 +62,6 @@ export default (baseUrl, config={})=>{
         logout:()=>_fetch('POST',{},['logout']),
         password:(username, password, newPassword)=>_fetch('POST',{username, password, newPassword},['password']),
         me:()=>_fetch('GET',null,['me'])
+        //,openapi:()=>_fetch('GET',null,['openapi'])
     };
 };

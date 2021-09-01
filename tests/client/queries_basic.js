@@ -1,3 +1,125 @@
+const parseOpenApi=api=>{
+    const actions=['list','read'];
+    const path=key=>key==='list'
+        ? ['components', 'schemas', key, 'properties', 'records', 'items', 'properties']
+        : ['components', 'schemas', key, 'properties'];
+    const resolve=(key)=> {
+        let p=path(key);
+        let obj=api;
+        while(p.length!==0) {
+            console.log(p);
+            let d=p.shift();
+            if (obj.hasOwnProperty(d)) {
+                obj=obj[d];
+            } else {
+                obj=null;
+                break;
+            }
+        }
+        return obj;
+    };
+    const getProperties=(table, action)=>{
+        const key = action+'-'+table;
+        if (!properties.hasOwnProperty(key)) properties[key] = resolve(key);
+        return properties[key];
+    }
+    const hasTable=(table,action='list')=> {
+        return getProperties(table,action) !==null;
+    };
+    const getTables=()=> {
+        let t = [];
+        api.tags.forEach(tag => {
+            if (hasTable(tag.name) && tag.name!=='sqlite_sequence') t.push(tag.name)
+        });
+        return t;
+    };
+    const getReferences=(table, action)=> {
+        const properties = getProperties(table, action);
+        const references = {};
+        for (let [field,property] of Object.entries(properties)){
+            references[field] = property['x-references'] ? property['x-references'] : false;
+        }
+        return references;
+    }
+    const getTypes=(table, action)=>{
+        const properties = getProperties(table, action);
+        const types = [];
+        const isDecimal =s=> s.match( /^(\d+\.?\d{0,9}|\.\d{1,9})$/ );
+        for (let [field,property] of Object.entries(properties)) {
+            let type = property['type'],
+            nullable = property['nullable'] ? property['nullable'] : false,
+            format = property['format'] ? property['format'] : property['type'],
+            maxLength = property['maxLength'] ? property['maxLength'] : 0,
+            pattern = property['pattern'],
+            hint = '';
+            switch (format) {
+                case 'timestamp':
+                    hint = 'yyyy-mm-dd hh:mm:ss';
+                    maxLength = 19;
+                    break;
+                case 'date':
+                    hint = 'yyyy-mm-dd';
+                    maxLength = 10;
+                    break;
+                case 'time':
+                    hint = 'hh:mm:ss';
+                    maxLength = 8;
+                    break;
+                case 'decimal':
+                    /*if (preg_match_all('/{1,([0-9]+)}/', $pattern, $matches) == 2) {
+                        maxLength = array_sum($matches[1]) + 2;
+                        decimals = $matches[1][1];
+                        hint = '#.' . str_repeat('#', $decimals);
+                    }*/
+                    break;
+                case 'color':
+                    pattern = '/^#?[0-9a-fA-F]{6}$/';
+                    hint = '#3399ff';
+                    maxLength = 7;
+                    break;
+                case 'email':
+                    pattern = '/^.+@[^\.].*\.[a-z]{2,}$/';
+                    hint = 'xxx@xxx.xxx';
+                    break;
+                case 'url':
+                    pattern = '/^(ftp|http|https):\/\/.*$/';
+                    hint = 'https://...';
+                    break;
+                case 'point':
+                    pattern = '/^POINT\s?\(.*\)$/';
+                    hint = 'POINT(lon lat)';
+                    break;
+                case 'polygon':
+                    pattern = '/^POLYGON\s?\(\(.*\)\)$/';
+                    hint = 'POLYGON((lon1 lat1,lon2 lat2,lon3 lat3,lon1 lat1))';
+                    break;
+            }
+            types[field] = {type, nullable, maxLength,hint,pattern};
+            
+        }
+        return types;
+    }
+    const getReferenced=(table, action)=>{
+        const properties = getProperties($table, $action);
+        let referenced = [];
+        for (let [field,property] of properties) {
+            if (property['x-referenced'])
+                referenced = referenced.concat(property['x-referenced']);
+        }
+        referenced=referenced.map(v=>v.split('.'));
+        return referenced;
+    }
+    const getPrimaryKey=(table, action)=>{
+        const properties = getProperties(table, action);
+        for (let [field,property] of properties)
+        if (property['x-primary-key']) return field;
+        return false;
+    }
+    const properties={};
+    const tables=getTables();
+    return getTables();
+}
+
 const users=[ // and persons ...
     {login:'tit1',pass:'tit1pass', 'firstname':'t1', lastname:'it1', user_id:1},
     {login:'tit2',pass:'tit2pass', 'firstname':'t2', lastname:'it2', user_id:2},
@@ -18,7 +140,7 @@ const notes=[
     {note:'note2', title:'multi-ordering', user_id: 1},
     {note:'note3', title:'multi-ordering', user_id: 1}
 ];
-// todo improve paginatino tests
+// todo improve pagination tests
 /*const pagination=Array(1).fill('').map(v=>({foo:1}));
 const pagination_expected=JSON.stringify([...Array(1).fill('').keys()].map(v=>v+1));
 */
@@ -217,5 +339,10 @@ export default (jca)=>[
         ()=>jca.list('user', {join:[['note,sub_note'],['person']], include:'note.id,user.id,sub_note.id'}),
         '{"records":[{"id":1,"note":[{"id":1,"user_id":1,"sub_note":[{"id":1,"note_id":1}]},{"id":10,"user_id":1,"sub_note":[]},{"id":11,"user_id":1,"sub_note":[]}],"person":[{"user_id":1}]},{"id":2,"note":[{"id":2,"user_id":2,"sub_note":[]}],"person":[{"user_id":2}]},{"id":3,"note":[{"id":3,"user_id":3,"sub_note":[]},{"id":9,"user_id":3,"sub_note":[]}],"person":[{"user_id":3}]}]}',
         'Read with join, paths : user/note/sub_note and user/person (Array version)'
-    ]
+    ]/*, [
+        ()=>jca.openapi(),
+        null,
+        "Retrieve openapi database specs",
+        parseOpenApi
+      ]*/
 ];
