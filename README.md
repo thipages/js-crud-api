@@ -15,14 +15,14 @@ JOINS : better API map with PHP-CRUD-API, no more joinx, see discussion [here](h
 ```javascript
 import jscrudapi from 'js-crud-api';
 const jca=jscrudapi('urlToApi.php');
-jca.read('aTable');
+jca.read('aTable',1);
 ```
 - via HTML
 ```html
 <script src="min.js"></script>
 <script>
     const jca=jscrudapi('urlToApi.php');
-    jca.read('aTable');
+    jca.list('aTable');
 </script>
 ```
 
