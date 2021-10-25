@@ -8,8 +8,6 @@ JavaScript client library for the API of [PHP-CRUD-API](https://github.com/mevds
 JOINS : better API map with PHP-CRUD-API, no more joinx, see discussion [here](https://github.com/mevdschee/php-crud-api/issues/770#issuecomment-802204560)
 
 # Installation
-
-
 - via npm : _npm i js-crud-api_
 
 ```javascript
