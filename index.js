@@ -1,4 +1,5 @@
 // todo : encodeURIComponent usage?
+// todo : https://github.com/Swizec/better-fetch implemntation
 const castArray=a=>Array.isArray(a)?a:[a];
 const prefix=p=>s=>p+s;
 const join=(d=',')=>a=>castArray(a).join(d);
@@ -66,4 +67,4 @@ var index = (baseUrl, config={})=>{
     };
 };
 
-export default index;
+export { index as default };
