@@ -2,6 +2,7 @@
   "name": "js-crud-api",
   "version": "0.3.0",
   "description": "JavaScript API for php-crud-api",
+  "type": "module",
   "keywords": [
     "php-crud-api",
     "javascript",
@@ -11,7 +12,8 @@
   ],
   "author": "Thierry PAGES",
   "license": "MIT",
-  "module": "esm/index.js",
+  "main": "./esm/index.js",
+  "module": "./esm/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thipages/js-crud-api.git"
