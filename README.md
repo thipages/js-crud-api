@@ -125,8 +125,8 @@ Conditions are stored as object properties, values as (array of) string/number
 
 ## Tests
 
-- PHP-CRUD-API v2.11.3
-- SQLite v3.35.1
+- PHP-CRUD-API v2.14.25
+- SQLite v3.43.2
 
 
 
