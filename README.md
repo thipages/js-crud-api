@@ -48,8 +48,8 @@ JS-CRUD-API accesses PHP-CRUD-API with the following functions
 |                                | ```read('atable', [1,2])```    |
 |                                | ```read('atable', 1,{join:'anotherTable'})```    |
 | list (table, conditions={})    | ```list('atable')```           |
-|                                | ```list('atable', {filter:'id eq 1'})``` |
-|                                | ```list('atable', {filter:['id eq 1','id eq 2']})``` |
+|                                | ```list('atable', {filter:'id,eq,1'})``` |
+|                                | ```list('atable', {filter:['id,eq,1','id,eq,2']})``` |
 |                                | [other conditions here](#conditions)
 | create (table,data)            | ```create('atable', {field:'value'})```      |
 |                                | ```create('atable', [{field:'value1'},{field:'value2'}])```      |
