@@ -1,8 +1,8 @@
 ### How to run tests
 - Download `composer` from https://getcomposer.org/download/
 - Run `composer update`
-- Run a local server `php -S localhost:8000`
-- Launch `tests.html`
+- Run a local server `php -S localhost:8000` at the project root
+- Launch `http://localhost:8000/tests.html`
 
 ### Tests issue
 1. basic and authDB tests must share the same database otherwise when one test succeed, the other oe failed.
