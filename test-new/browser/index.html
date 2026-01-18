@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS-CRUD-API - Tests Navigateur</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧪 JS-CRUD-API - Tests Navigateur</h1>
+      <p class="subtitle">Tests fonctionnels basés sur PHP-CRUD-API</p>
+    </header>
+
+    <section class="config-panel">
+      <h2>⚙️ Configuration</h2>
+      <div class="config-form">
+        <div class="form-group">
+          <label for="baseUrl">URL de base de l'API:</label>
+          <input 
+            type="text" 
+            id="baseUrl" 
+            value="http://localhost:8081/api.php"
+            placeholder="http://localhost:8081/api.php"
+          >
+        </div>
+        <div class="form-group">
+          <label for="testSuite">Suite de tests:</label>
+          <select id="testSuite">
+            <option value="">-- Chargement... --</option>
+          </select>
+        </div>
+        <div class="form-group checkbox">
+          <label>
+            <input type="checkbox" id="strictMode">
+            Mode strict (comparer aussi les headers)
+          </label>
+        </div>
+        <div class="form-group checkbox">
+          <label>
+            <input type="checkbox" id="logRequests">
+            Logger les requêtes détaillées
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <button id="runTests" class="btn btn-primary">▶ Lancer les tests</button>
+      <button id="runAllTests" class="btn btn-secondary">▶▶ Lancer tous les tests</button>
+      <button id="resetDb" class="btn btn-warning">🔄 Reset DB</button>
+      <button id="stopTests" class="btn btn-danger" disabled>⏹ Stop</button>
+    </section>
+
+    <section class="progress-section">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">Prêt</div>
+    </section>
+
+    <section class="stats">
+      <div class="stat-box stat-total">
+        <div class="stat-value" id="totalTests">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-box stat-passed">
+        <div class="stat-value" id="passedTests">0</div>
+        <div class="stat-label">Réussis</div>
+      </div>
+      <div class="stat-box stat-failed">
+        <div class="stat-value" id="failedTests">0</div>
+        <div class="stat-label">Échoués</div>
+      </div>
+      <div class="stat-box stat-skipped">
+        <div class="stat-value" id="skippedTests">0</div>
+        <div class="stat-label">Ignorés</div>
+      </div>
+    </section>
+
+    <section class="results">
+      <div class="results-header">
+        <h2>📊 Résultats</h2>
+        <div class="results-filters">
+          <button class="filter-btn active" data-filter="all">Tous</button>
+          <button class="filter-btn" data-filter="failed">Échoués</button>
+          <button class="filter-btn" data-filter="passed">Réussis</button>
+          <button class="filter-btn" data-filter="skipped">Ignorés</button>
+        </div>
+      </div>
+      <div id="resultsContainer" class="results-container">
+        <div class="no-results">Aucun test exécuté pour le moment.</div>
+      </div>
+    </section>
+
+    <section class="results">
+      <div class="results-header">
+        <h2>📋 Export pour Copilot</h2>
+        <button id="copyExport" class="btn btn-secondary">📋 Copier</button>
+      </div>
+      <textarea id="exportTextarea" class="export-textarea" readonly placeholder="Les résultats apparaîtront ici..."></textarea>
+    </section>
+  </div>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { initApp } from './src/app.js';
+    initApp();
+  </script>
+</body>
+</html>
