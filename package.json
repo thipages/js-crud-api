@@ -33,7 +33,8 @@
     "rollup:esm_watch": "rollup --config rollup/rollup.config_esm.js --w",
     "test:sync": "node test-new/sync-php-crud-tests.js",
     "test:init:sqlite": "node test-new/init-sqlite.js",
-    "test:rest": "node --test test-new/run-php-crud-tests.test.js"
+    "test:rest": "node --test test-new/run-php-crud-tests.test.js",
+    "test:build": "node test-new/build-test-data.js"
   },
   "dependencies": {
     "@rollup/plugin-terser": "^0.4.4"
