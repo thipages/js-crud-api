@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS-CRUD-API Tests</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 { color: #007acc; }
+    .links {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 40px;
+    }
+    a {
+      display: inline-block;
+      padding: 15px 30px;
+      background: #007acc;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    a:hover {
+      background: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 122, 204, 0.3);
+    }
+    .info {
+      margin-top: 40px;
+      padding: 20px;
+      background: #f9fafb;
+      border-radius: 8px;
+      text-align: left;
+    }
+    code {
+      background: #e5e7eb;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 JS-CRUD-API Tests</h1>
+  <p>Tests fonctionnels pour la librairie JS-CRUD-API</p>
+
+  <div class="links">
+    <a href="browser/">🌐 Tests Navigateur</a>
+    <a href="api.php/records/posts" target="_blank">🔌 API (exemple)</a>
+  </div>
+
+  <div class="info">
+    <h3>Démarrage rapide</h3>
+    <ol>
+      <li>Synchroniser les tests : <code>npm run test:sync</code></li>
+      <li>Builder les tests : <code>npm run test:build</code></li>
+      <li>Initialiser la DB : <code>npm run test:init:sqlite</code></li>
+      <li>Démarrer PHP : <code>php -S localhost:8081 -t test-new</code></li>
+      <li>Ouvrir : <a href="browser/">http://localhost:8081/browser/</a></li>
+    </ol>
+  </div>
+</body>
+</html>
