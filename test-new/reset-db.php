@@ -8,7 +8,6 @@ header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: text/plain');
 
-// Gérer les requêtes OPTIONS (CORS preflight)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -18,9 +17,39 @@ $dbPath = __DIR__ . '/var/php-crud-api.sqlite';
 $fixturePath = __DIR__ . '/php-crud-tests/fixtures/blog_sqlite.sql';
 
 try {
-    // Supprimer la base existante
+    if (!file_exists($fixturePath)) {
+        throw new Exception("Fixture introuvable: $fixturePath");
+    }
+
+    // Supprimer les fichiers de verrouillage orphelins (Windows)
+    foreach (['-wal', '-shm', '-journal'] as $suffix) {
+        $lockFile = $dbPath . $suffix;
+        if (file_exists($lockFile)) {
+            @unlink($lockFile);
+        }
+    }
+
+    // Supprimer et recréer la base
     if (file_exists($dbPath)) {
-        unlink($dbPath);
+        // Fermer toute connexion PDO résiduelle
+        if (function_exists('gc_collect_cycles')) {
+            gc_collect_cycles();
+        }
+        if (!@unlink($dbPath)) {
+            // Si unlink échoue, essayer via PDO en place
+            $pdo = new PDO("sqlite:$dbPath");
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pdo->exec('PRAGMA busy_timeout = 5000');
+            $pdo->exec('PRAGMA foreign_keys = OFF');
+
+            $sql = file_get_contents($fixturePath);
+            $pdo->exec($sql);
+            $pdo->exec('PRAGMA foreign_keys = ON');
+            $pdo = null;
+
+            echo "OK - Reset en place (" . filesize($dbPath) . " octets)\n";
+            exit;
+        }
     }
 
     // Créer le dossier var si nécessaire
@@ -29,56 +58,16 @@ try {
         mkdir($varDir, 0777, true);
     }
 
-    // Vérifier que la fixture existe
-    if (!file_exists($fixturePath)) {
-        throw new Exception("Fixture SQL introuvable: $fixturePath");
-    }
-
-    // Lire le SQL de la fixture
+    // Créer la base depuis zéro
+    $pdo = new PDO("sqlite:$dbPath");
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $sql = file_get_contents($fixturePath);
-    if ($sql === false) {
-        throw new Exception("Impossible de lire la fixture SQL");
-    }
+    $pdo->exec($sql);
+    $pdo = null;
 
-    // Exécuter le SQL avec sqlite3
-    $command = sprintf('sqlite3 %s', escapeshellarg($dbPath));
-    $descriptors = [
-        0 => ['pipe', 'r'],  // stdin
-        1 => ['pipe', 'w'],  // stdout
-        2 => ['pipe', 'w'],  // stderr
-    ];
-
-    $process = proc_open($command, $descriptors, $pipes);
-    if (!is_resource($process)) {
-        throw new Exception("Impossible de démarrer sqlite3");
-    }
-
-    // Envoyer le SQL
-    fwrite($pipes[0], $sql);
-    fclose($pipes[0]);
-
-    // Lire la sortie
-    $stdout = stream_get_contents($pipes[1]);
-    $stderr = stream_get_contents($pipes[2]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-
-    $exitCode = proc_close($process);
-
-    if ($exitCode !== 0) {
-        throw new Exception("Erreur sqlite3 (code $exitCode): $stderr");
-    }
-
-    // Vérifier que la base a été créée
-    if (!file_exists($dbPath)) {
-        throw new Exception("La base n'a pas été créée");
-    }
-
-    echo "✅ Base de données réinitialisée avec succès\n";
-    echo "📁 Fichier: $dbPath\n";
-    echo "📊 Taille: " . filesize($dbPath) . " octets\n";
+    echo "OK - Base créée (" . filesize($dbPath) . " octets)\n";
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo "❌ Erreur: " . $e->getMessage() . "\n";
+    echo "Erreur: " . $e->getMessage() . "\n";
 }

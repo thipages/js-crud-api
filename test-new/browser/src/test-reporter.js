@@ -152,10 +152,11 @@ ${'='.repeat(50)}\n\n`;
       failedTests.forEach(test => {
         const name = test.querySelector('.test-name')?.textContent || 'Unknown';
         const details = test.querySelector('.test-details')?.textContent || '';
+        const error = test.querySelector('.test-error')?.textContent || '';
         const diffExpected = test.querySelector('.diff-expected pre')?.textContent || '';
         const diffActual = test.querySelector('.diff-actual pre')?.textContent || '';
-        
-        const testInfo = { name, details, diffExpected, diffActual };
+
+        const testInfo = { name, details, error, diffExpected, diffActual };
 
         // Classifier
         if (name.includes('_with_post.log')) {
@@ -179,9 +180,12 @@ ${'='.repeat(50)}\n\n`;
           content += `\n${group.name} (${group.tests.length}):\n${'='.repeat(50)}\n`;
           group.tests.forEach(test => {
             content += `\n${test.name}\n${test.details}\n`;
+            if (test.error) {
+              content += `${test.error}\n`;
+            }
             if (test.diffExpected) {
-              content += `✓ Attendu: ${test.diffExpected.substring(0, 100)}...\n`;
-              content += `✗ Reçu: ${test.diffActual.substring(0, 100)}...\n`;
+              content += `✓ Attendu: ${test.diffExpected.substring(0, 200)}...\n`;
+              content += `✗ Reçu: ${test.diffActual.substring(0, 200)}...\n`;
             }
           });
         }

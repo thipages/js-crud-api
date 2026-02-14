@@ -6,6 +6,44 @@ import { parseLogFile, toJsonIfPossible } from '../../shared/log-parser.js';
 import { normalizeResponse, buildUrl } from '../../shared/normalizers.js';
 import { TestAdapter } from './test-adapter.js';
 
+const AUTH_ENDPOINTS = ['/login', '/logout', '/register', '/password', '/me'];
+const AUTH_HEADERS = ['x-authorization', 'authorization', 'x-api-key', 'x-api-key-db'];
+
+/**
+ * Restaure la casse standard des headers HTTP.
+ * Le log-parser met tout en minuscules, mais certains serveurs PHP
+ * (et notamment le serveur intégré) sont sensibles à la casse
+ * pour les headers d'authentification (Authorization, X-API-Key, etc.)
+ */
+const HEADER_CASE_MAP = {
+  'authorization': 'Authorization',
+  'x-authorization': 'X-Authorization',
+  'x-api-key': 'X-API-Key',
+  'x-api-key-db': 'X-API-Key-DB',
+  'content-type': 'Content-Type',
+  'content-length': 'Content-Length',
+  'accept': 'Accept',
+};
+const normalizeHeaderName = (name) => HEADER_CASE_MAP[name] || name;
+
+/**
+ * Détermine si un fichier .log contient des flux d'auth.
+ * Ces fichiers doivent être traités entièrement via fetch() pour maintenir
+ * la cohérence des cookies de session entre les requêtes.
+ */
+const fileHasAuthFlow = (pairs) => {
+  return pairs.some(({ request }) => {
+    const pathOnly = request.path.split('?')[0];
+    if (AUTH_ENDPOINTS.includes(pathOnly)) return true;
+    if (request.headers instanceof Map) {
+      for (const key of request.headers.keys()) {
+        if (AUTH_HEADERS.includes(key)) return true;
+      }
+    }
+    return false;
+  });
+};
+
 export class TestRunner {
   constructor(baseUrl, options = {}, reporter) {
     this.baseUrl = baseUrl;
@@ -99,15 +137,23 @@ export class TestRunner {
       return;
     }
 
-    // Cookie jar pour ce test
+    // Effacer la session PHP entre chaque fichier test
+    // pour éviter les fuites de session (le navigateur partage les cookies)
+    document.cookie = 'PHPSESSID=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+
+    // Cookie jar pour ce test (utilisé pour les headers manuels,
+    // le navigateur gère aussi ses propres cookies en parallèle)
     const cookieJar = new Map();
+
+    // Si le fichier contient des flux d'auth, tout passe par fetch()
+    const forceRawFetch = fileHasAuthFlow(parsed.pairs);
 
     // Exécuter chaque paire requête/réponse
     for (let i = 0; i < parsed.pairs.length; i++) {
       const { request, response: expectedResponse } = parsed.pairs[i];
 
       try {
-        const actualResponse = await this.executeRequest(request, cookieJar);
+        const actualResponse = await this.executeRequest(request, cookieJar, forceRawFetch);
         this.compareResponse(actualResponse, expectedResponse, `${testPath} [${i + 1}]`);
       } catch (error) {
         this.reporter.reportTest(testPath, {
@@ -130,7 +176,7 @@ export class TestRunner {
   /**
    * Exécute une requête HTTP (via adaptateur JS-CRUD-API ou fetch direct)
    */
-  async executeRequest(request, cookieJar) {
+  async executeRequest(request, cookieJar, forceRawFetch = false) {
     // Convertir Map headers en objet pour canAdapt()
     const headersObj = {};
     if (request.headers && request.headers instanceof Map) {
@@ -140,7 +186,16 @@ export class TestRunner {
     }
 
     // Décider si on utilise l'adaptateur ou fetch direct
-    const useAdapter = this.adapter.canAdapt(request.method, request.path, headersObj);
+    let useAdapter = false;
+    let reason = '';
+
+    if (forceRawFetch) {
+      reason = 'fichier auth (fetch forcé)';
+    } else {
+      const result = this.adapter.canAdapt(request.method, request.path, headersObj, request.body);
+      useAdapter = result.adaptable;
+      reason = result.reason || '';
+    }
 
     if (useAdapter && this.logRequests) {
       console.log(`🔄 Via JS-CRUD-API: ${request.method} ${request.path}`);
@@ -170,7 +225,7 @@ export class TestRunner {
 
     // Fetch direct (pour endpoints non-CRUD ou en fallback)
     if (this.logRequests && !useAdapter) {
-      console.log(`🌐 Via fetch(): ${request.method} ${request.path}`);
+      console.log(`🌐 Via fetch(): ${request.method} ${request.path}${reason ? ` (${reason})` : ''}`);
     }
 
     const url = buildUrl(this.baseUrl, request.path);
@@ -183,17 +238,20 @@ export class TestRunner {
       headers['Cookie'] = Array.from(cookieJar.values()).join('; ');
     }
 
-    // Ajouter les headers de la requête
+    // Ajouter les headers de la requête (avec casse standard restaurée)
     for (const [name, values] of request.headers) {
       if (name !== 'host' && name !== 'content-length') {
-        headers[name] = values.join(', ');
+        headers[normalizeHeaderName(name)] = values.join(', ');
       }
     }
 
     // Préparer la config fetch
+    // credentials: 'include' garantit l'envoi des cookies (PHPSESSID)
+    // même en contexte cross-origin (port différent entre page et API)
     const fetchConfig = {
       method: request.method,
-      headers: headers
+      headers: headers,
+      credentials: 'include'
     };
 
     // Ajouter le body si présent

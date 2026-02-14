@@ -22,8 +22,7 @@
     "@babel/core": "^7.11.6",
     "@babel/preset-env": "^7.11.5",
     "@rollup/plugin-node-resolve": "^9.0.0",
-    "rollup-plugin-babel": "^4.4.0",
-    "dotenv": "^16.4.5"
+    "rollup-plugin-babel": "^4.4.0"
   },
   "scripts": {
     "build": "npm run rollup:esm && npm run rollup:iife_min && npm run rollup:esm_min && npm run rollup:esm_watch",
@@ -34,6 +33,7 @@
     "test:sync": "node test-new/sync-php-crud-tests.js",
     "test:init:sqlite": "node test-new/init-sqlite.js",
     "test:rest": "node --test test-new/run-php-crud-tests.test.js",
+    "test:jca": "node --test test-new/run-jca-tests.test.js",
     "test:build": "node test-new/build-test-data.js"
   },
   "dependencies": {

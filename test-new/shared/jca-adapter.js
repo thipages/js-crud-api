@@ -1,17 +1,15 @@
 /**
- * Adaptateur REST → JS-CRUD-API (navigateur)
- * Traduit les requêtes REST brutes en appels à la librairie JS-CRUD-API
+ * Adaptateur REST → JS-CRUD-API pour Node.js
+ * Traduit les requêtes HTTP brutes des fichiers .log en appels à esm/index.js
  */
 
-import JSCRUDAPI from '../lib/js-crud-api.js';
+import jscrudapi from '../../esm/index.js';
 
-export class TestAdapter {
+export class JcaAdapter {
+  #api;
+
   constructor(baseUrl) {
-    this.baseUrl = baseUrl;
-    // credentials: 'omit' empêche le navigateur d'envoyer les cookies (PHPSESSID)
-    // sur les requêtes de la librairie. Cela reproduit le comportement Node.js
-    // où les requêtes JCA ne partagent pas la session PHP avec les requêtes fetch.
-    this.api = JSCRUDAPI(baseUrl, { credentials: 'omit' });
+    this.#api = jscrudapi(baseUrl);
   }
 
   /**
@@ -88,9 +86,9 @@ export class TestAdapter {
       const parts = pathOnly.split('/').filter(Boolean);
       const hasMultipleIds = parts[2] && parts[2].includes(',');
 
-      // PUT avec IDs multiples (batch update) :
+      // PUT/PATCH avec IDs multiples (batch update) :
       // js-crud-api perd les erreurs partielles (status 424)
-      if (hasMultipleIds && method === 'PUT') {
+      if (hasMultipleIds && (method === 'PUT' || method === 'PATCH')) {
         return { adaptable: false, reason: 'batch update (erreurs partielles non gérées)' };
       }
 
@@ -103,9 +101,9 @@ export class TestAdapter {
         }
       }
 
-      // PUT avec include/exclude : la librairie ne transmet pas
+      // PUT/PATCH avec include/exclude : la librairie ne transmet pas
       // les query params sur update(), ce qui change le comportement serveur
-      if (method === 'PUT' && queryString) {
+      if ((method === 'PUT' || method === 'PATCH') && queryString) {
         const params = new URLSearchParams(queryString);
         if (params.has('include') || params.has('exclude')) {
           return { adaptable: false, reason: 'include/exclude sur update non supporté' };
@@ -115,11 +113,11 @@ export class TestAdapter {
       return { adaptable: true, reason: null };
     }
 
-    // Endpoints d'authentification : pas adaptables
+    // Endpoints d'authentification : pas adaptables en Node.js
     // car fetch() ne gère pas les cookies de session automatiquement
     const authEndpoints = ['/login', '/logout', '/register', '/password', '/me'];
     if (authEndpoints.includes(pathOnly)) {
-      return { adaptable: false, reason: 'auth endpoint (cookies non gérés)' };
+      return { adaptable: false, reason: 'auth endpoint (cookies non gérés en Node.js)' };
     }
 
     // Tous les autres endpoints : non supportés
@@ -129,7 +127,7 @@ export class TestAdapter {
   /**
    * Parse le path et les query params en conditions JS-CRUD-API
    */
-  parsePath(path) {
+  #parsePath(path) {
     const [pathOnly, queryString] = path.split('?');
     const parts = pathOnly.split('/').filter(Boolean);
 
@@ -156,6 +154,7 @@ export class TestAdapter {
             conditions[key] = value;
             break;
           default:
+            // satisfy, filter1, filter2, etc.
             if (!conditions[key]) conditions[key] = [];
             conditions[key].push(value);
             break;
@@ -167,10 +166,11 @@ export class TestAdapter {
   }
 
   /**
-   * Exécute une requête via JS-CRUD-API
+   * Exécute une requête via JS-CRUD-API.
+   * Retourne la donnée ou lance une erreur {code, message}.
    */
   async execute(method, path, body) {
-    const { parts, conditions } = this.parsePath(path);
+    const { parts, conditions } = this.#parsePath(path);
 
     if (parts[0] !== 'records') {
       throw { code: -1, message: `Endpoint non supporté: ${path}` };
@@ -183,24 +183,25 @@ export class TestAdapter {
     switch (method) {
       case 'GET':
         if (id) {
-          return this.api.read(table, id, hasConditions ? conditions : undefined);
+          return this.#api.read(table, id, hasConditions ? conditions : undefined);
         }
-        return this.api.list(table, hasConditions ? conditions : undefined);
+        return this.#api.list(table, hasConditions ? conditions : undefined);
 
       case 'POST': {
         const data = typeof body === 'string' ? JSON.parse(body) : body;
-        return this.api.create(table, data);
+        return this.#api.create(table, data);
       }
 
-      case 'PUT': {
+      case 'PUT':
+      case 'PATCH': {
         if (!id) throw { code: -1, message: 'ID requis pour UPDATE' };
         const data = typeof body === 'string' ? JSON.parse(body) : body;
-        return this.api.update(table, id, data);
+        return this.#api.update(table, id, data);
       }
 
       case 'DELETE':
         if (!id) throw { code: -1, message: 'ID requis pour DELETE' };
-        return this.api.delete(table, id);
+        return this.#api.delete(table, id);
 
       default:
         throw { code: -1, message: `Méthode HTTP non supportée: ${method}` };
@@ -209,17 +210,14 @@ export class TestAdapter {
 
   /**
    * Exécute une requête et retourne un objet réponse comparable
+   * au format {status, body} attendu par les tests.
    */
   async executeAsResponse(method, path, body) {
     try {
       const data = await this.execute(method, path, body);
       return {
         status: 200,
-        statusText: 'OK',
-        headers: new Map([
-          ['content-type', ['application/json; charset=utf-8']]
-        ]),
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       };
     } catch (error) {
       const errorData = error && error.code !== undefined
@@ -228,11 +226,7 @@ export class TestAdapter {
 
       return {
         status: this.#errorCodeToStatus(errorData.code),
-        statusText: errorData.message || 'Error',
-        headers: new Map([
-          ['content-type', ['application/json; charset=utf-8']]
-        ]),
-        body: JSON.stringify(errorData)
+        body: JSON.stringify(errorData),
       };
     }
   }

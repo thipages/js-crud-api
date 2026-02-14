@@ -120,10 +120,7 @@ async function runTests() {
     await resetDatabaseSilent(baseUrl);
     console.log('✅ Base réinitialisée');
   } catch (error) {
-    console.warn('⚠️ Reset DB échoué:', error.message);
-    if (!confirm('Le reset de la DB a échoué. Continuer quand même ?')) {
-      return;
-    }
+    console.warn('⚠️ Reset DB échoué (ignoré):', error.message);
   }
   
   console.log('🚀 Démarrage des tests...');
@@ -277,19 +274,34 @@ function saveConfig() {
 }
 
 /**
+ * Calcule l'URL par défaut de l'API depuis l'origine de la page.
+ * En same-origin, on évite tout problème CORS.
+ */
+function getDefaultBaseUrl() {
+  return `${window.location.origin}/api.php`;
+}
+
+/**
  * Charge la configuration depuis localStorage
  */
 function loadConfig() {
+  const defaultUrl = getDefaultBaseUrl();
   try {
     const config = JSON.parse(localStorage.getItem('jca-test-config'));
     if (config) {
-      if (config.baseUrl) document.getElementById('baseUrl').value = config.baseUrl;
+      // Ignorer les URL sauvegardées cross-origin (port différent)
+      // pour éviter les erreurs CORS
+      const savedUrl = config.baseUrl || '';
+      const isSameOrigin = savedUrl.startsWith(window.location.origin);
+      document.getElementById('baseUrl').value = isSameOrigin ? savedUrl : defaultUrl;
       document.getElementById('strictMode').checked = config.strictMode || false;
       document.getElementById('logRequests').checked = config.logRequests || false;
+      return;
     }
   } catch (error) {
     // Ignorer les erreurs de parsing
   }
+  document.getElementById('baseUrl').value = defaultUrl;
 }
 
 /**
