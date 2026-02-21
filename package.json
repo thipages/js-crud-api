@@ -30,6 +30,7 @@
     "rollup:esm_min": "rollup --config rollup/rollup.config_esm_min.js",
     "rollup:esm": "rollup --config rollup/rollup.config_esm.js",
     "rollup:esm_watch": "rollup --config rollup/rollup.config_esm.js --w",
+    "test:unit": "node --test test-new/unit-api-formats.test.js",
     "test:sync": "node test-new/sync-php-crud-tests.js",
     "test:init:sqlite": "node test-new/init-sqlite.js",
     "test:rest": "node --test test-new/run-php-crud-tests.test.js",
