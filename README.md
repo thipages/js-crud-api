@@ -1,133 +1,76 @@
 # JS-CRUD-API
 
-JavaScript client library for the API of [PHP-CRUD-API](https://github.com/mevdschee/php-crud-api)
-### jca-filter
-[JCA-FILTER](https://github.com/thipages/jca-filter)
- facilitates filters creation for JS-CRUD-API
+> **v0.4.1** — JavaScript client library for [PHP-CRUD-API](https://github.com/mevdschee/php-crud-api)
 
-# Installation
-- via npm : _npm i js-crud-api_
+**Note:** This repository and its source code are in English.
+
+Zero runtime dependency. Uses native `fetch`. 68 lines of source code.
+
+## Installation
+
+```bash
+npm i js-crud-api
+```
 
 ```javascript
 import jscrudapi from 'js-crud-api';
-const jca=jscrudapi('urlToApi.php');
-jca.read('aTable',1);
+const jca = jscrudapi('http://localhost/api.php');
 ```
-- via HTML
+
+Or via HTML:
+
 ```html
 <script src="min.js"></script>
 <script>
-    const jca=jscrudapi('urlToApi.php');
-    jca.list('aTable');
+  const jca = jscrudapi('http://localhost/api.php');
 </script>
 ```
 
-# Promise-based
-All functions (see API) are promise-based
+## Quick example
+
 ```javascript
-    jca.create('atable', {field:'value'}).then(
-        result=>console.log(result)    
-    ).catch (
-        error=>console.log(error)
-    );
+// List
+jca.list('posts', { filter: 'id,gt,5', order: 'id,desc' });
+
+// CRUD
+jca.read('posts', 1);
+jca.create('posts', { title: 'Hello' });
+jca.update('posts', 1, { title: 'Updated' });
+jca.delete('posts', 1);
+
+// Auth (DBAuth)
+jca.login('user', 'pass');
 ```
-Errors
-- PHP-CRUD-API error codes and related messages are listed [here](https://github.com/mevdschee/php-crud-api#errors)
-- An generic javascript related error code has been added : -1 (eg fetch network error)
 
-## API
-
-JS-CRUD-API accesses PHP-CRUD-API with the following functions
-
-- **CRUD functions**
-
-| CRUD functions                 | examples                       |
-| ------------------------------ | ------------------------------ |
-| read (table,ids,conditions={}) | ```read('atable', 1)```        |
-|                                | ```read('atable', '1,2')```    |
-|                                | ```read('atable', [1,2])```    |
-|                                | ```read('atable', 1,{join:'anotherTable'})```    |
-| list (table, conditions={})    | ```list('atable')```           |
-|                                | ```list('atable', {filter:'id,eq,1'})``` |
-|                                | ```list('atable', {filter:['id,eq,1','id,eq,2']})``` |
-|                                | [other conditions here](#conditions)
-| create (table,data)            | ```create('atable', {field:'value'})```      |
-|                                | ```create('atable', [{field:'value1'},{field:'value2'}])```      |
-| update (table,idOrList,data)   | ```update('atable',1 {field:'newValue'})```      |
-|                                | ```update('atable','1,2' [{field:'newValue1'},{field:'newValue2'}])```      |
-|                                | ```update('atable',[1,2] [{field1:'newValue1'},{field2:'newValue2'}])```      |
-| delete (table,idOrList)        | ```delete('atable',1)```      |
-|                                | ```delete('atable','1,2')```  |
-|                                | ```delete('atable',[1,2])```  |
-
-- **Authentication functions** ([see documentation](https://github.com/mevdschee/php-crud-api#database-authentication))
-
-  * ```register(username,password)```
-  * ```login (username,password)```
-  * ```password (username,password,newPassowrd)```
-  * ```logout()```
-  * ```me()```
-
-
-
-
-## Conditions
-Conditions are stored as object properties, values as (array of) string/number
-
-- **FILTERING** ([documentation](https://github.com/mevdschee/php-crud-api#filters))
-  ```javascript
-  jca.read('aTable', {filter:'field,modifier,value'});
-  jca.read('aTable', {filter:['field1,modifier1,value1','field2,modifier2,value2']}); // AND
-  jca.read('aTable', {filter:'field1,modifier1,value1',filter1:'field2,modifier2,value2'}); // OR
-  ```
-  <ins>Modifiers</ins>
-  * cs(contain string), sw(start with), ew(end with), eq(equal), lt(lower than), le(lower or equal), ge(greater or equal), gt(greater than), bt(between), in, is(is null)
-  * filters can be negated by prepending a "n" character (eg "eq" becomes "neq")
-  
-- **JOINING** ([documentation](https://github.com/mevdschee/php-crud-api#joins))
-    ```javascript
-  jca.read('aTable', {join:'table1'});
-  jca.read('aTable', {join:'table1,table2'});         // path : atable>table1>table2
-  jca.read('aTable', {join:['table1','table2']});     // path : atable>table1>table2
-  jca.read('aTable', {join:[['table1'],['table2']]}); // paths: atable>table1 and atable>table2
-  ```
-
-- **SIZING**
-  ```javascript
-  jca.read('aTable', {size:10});
-  ```
-- **PAGINATING**
-  ```javascript
-  jca.read('aTable', {page:'1,50'});
-  jca.read('aTable', {page:1});
-  ```
-- **SELECTING COLUMN**
-    ```javascript
-  jca.read('aTable', {include:'field'});
-  jca.read('aTable', {include:['field1,field2']});
-  jca.read('aTable', {exclude:['field1']});
-  ```
-- **ORDERING**
-  ```javascript
-  jca.read('aTable', {order:'field,desc'});
-  jca.read('aTable', {order:['field1,desc','field2']});
-  ```
+All functions are Promise-based. Errors return `{ code, message }`.
 
 ## Limitations
 
-- Endpoints not (yet) implemented
-  * /openapi
-  * /geojson
-  * /columns
-  * /status/ping
-  
-- Only DBAuth is implemented (not basic and JWT authentications)
+- Endpoints not implemented: `/openapi`, `/geojson`, `/columns`, `/status/ping`
+- Only DBAuth (not JWT/Basic Auth)
+
+## Companion
+
+[JCA-FILTER](https://github.com/thipages/jca-filter) — facilitates filter creation for JS-CRUD-API
+
+## Documentation
+
+Detailed documentation (in French) is available in [`docs/`](docs/README.md):
+- [API Reference](docs/api.md) — full API documentation
+- [Architecture](docs/architecture.md) — project structure and internals
+- [Changelog](docs/changelog.md) — version history
+- [Roadmap 0.5](docs/roadmap/roadmap-0.5.md) — upcoming features
 
 ## Tests
 
-- PHP-CRUD-API v2.14.25
-- SQLite v3.43.2
+Built on PHP-CRUD-API v2.14.25, SQLite v3.43.2.
 
+```bash
+npm run test:unit    # Unit tests (parameter formats)
+npm run test:rest    # REST integration tests
+npm run test:jca     # JCA adapter tests
+```
 
+## License
 
-
+[MIT](LICENSE) — Thierry PAGES

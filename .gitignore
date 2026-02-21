@@ -4,3 +4,5 @@ node_modules
 .claude
 tests/php-crud-tests
 tests/var
+docs/project
+test-new
