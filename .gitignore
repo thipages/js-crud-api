@@ -2,5 +2,5 @@ vendor
 node_modules
 .cache
 .claude
-test-new/php-crud-tests
-test-new/var
+tests/php-crud-tests
+tests/var

@@ -30,12 +30,12 @@
     "rollup:esm_min": "rollup --config rollup/rollup.config_esm_min.js",
     "rollup:esm": "rollup --config rollup/rollup.config_esm.js",
     "rollup:esm_watch": "rollup --config rollup/rollup.config_esm.js --w",
-    "test:unit": "node --test test-new/unit-api-formats.test.js",
-    "test:sync": "node test-new/sync-php-crud-tests.js",
-    "test:init:sqlite": "node test-new/init-sqlite.js",
-    "test:rest": "node --test test-new/run-php-crud-tests.test.js",
-    "test:jca": "node --test test-new/run-jca-tests.test.js",
-    "test:build": "node test-new/build-test-data.js"
+    "test:unit": "node --test tests/unit-api-formats.test.js",
+    "test:sync": "node tests/sync-php-crud-tests.js",
+    "test:init:sqlite": "node tests/init-sqlite.js",
+    "test:rest": "node --test tests/run-php-crud-tests.test.js",
+    "test:jca": "node --test tests/run-jca-tests.test.js",
+    "test:build": "node tests/build-test-data.js"
   },
   "dependencies": {
     "@rollup/plugin-terser": "^0.4.4"
