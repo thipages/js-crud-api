@@ -6,9 +6,10 @@
  *
  * Stratégie :
  * - Chaque requête adaptable passe par JS-CRUD-API (list, read, create, update, delete)
- * - Les requêtes non adaptables (batch, XML, form-encoded, auth, etc.) passent par fetch()
- * - Les fichiers contenant des flux d'auth (login/logout) sont traités entièrement via fetch()
- *   car les cookies de session ne sont pas partagés entre l'adaptateur et fetch()
+ * - Les requêtes non adaptables (batch create/update, XML, form-encoded, etc.) passent par fetch()
+ * - Les auth par API Key passent par la librairie via config.headers (stateless)
+ * - Les fichiers avec auth session (dbAuth, JWT, Basic) sont traités via fetch()
+ *   car ils créent des sessions PHP et Node.js n'a pas de cookie jar natif
  * - Les résultats sont comparés aux réponses attendues des fichiers .log
  */
 
@@ -41,22 +42,27 @@ const resetDb = process.env.RESET_DB !== '0';
 const dbPath = process.env.SQLITE_DB || join(root, 'test-new', 'var', 'php-crud-api.sqlite');
 const fixturePath = process.env.SQLITE_FIXTURE || join(root, 'test-new', 'php-crud-tests', 'fixtures', 'blog_sqlite.sql');
 
-const AUTH_ENDPOINTS = ['/login', '/logout', '/register', '/password', '/me'];
-const AUTH_HEADERS = ['x-authorization', 'authorization', 'x-api-key', 'x-api-key-db'];
+const SESSION_AUTH_ENDPOINTS = ['/login', '/logout', '/register', '/password', '/me'];
+// JWT (X-Authorization) et Basic (Authorization) créent des sessions PHP.
+// Les requêtes suivantes dans le même fichier peuvent dépendre de l'état de session,
+// ce qui nécessite un cookie jar partagé non disponible via la librairie en Node.js.
+// Les API Key (X-API-Key, X-API-Key-DB) ne créent pas cette dépendance de session.
+const SESSION_CREATING_HEADERS = ['x-authorization', 'authorization'];
 
 /**
- * Détermine si un fichier .log contient des flux d'auth.
- * Détecte les endpoints d'auth ET les headers d'auth (JWT, Basic, API key).
- * Ces fichiers doivent être traités entièrement via fetch() pour maintenir
- * la cohérence des cookies de session entre les requêtes.
+ * Détermine si un fichier .log nécessite la gestion de session (cookies).
+ * Détecte les endpoints dbAuth ET les headers JWT/Basic qui créent des sessions PHP.
+ * Ces fichiers doivent être traités entièrement via fetch() en Node.js
+ * car fetch() ne gère pas les cookies de session automatiquement.
+ * Les API Key passent par la librairie via config.headers (pas de dépendance session).
  */
-const fileHasAuthFlow = (pairs) => {
+const fileHasSessionAuth = (pairs) => {
   return pairs.some(({ request }) => {
     const pathOnly = request.path.split('?')[0];
-    if (AUTH_ENDPOINTS.includes(pathOnly)) return true;
+    if (SESSION_AUTH_ENDPOINTS.includes(pathOnly)) return true;
     if (request.headers instanceof Map) {
       for (const key of request.headers.keys()) {
-        if (AUTH_HEADERS.includes(key)) return true;
+        if (SESSION_CREATING_HEADERS.includes(key)) return true;
       }
     }
     return false;
@@ -191,8 +197,8 @@ if (!existsSync(functionalDir)) {
         continue;
       }
 
-      // Si le fichier contient des flux d'auth, tout passe par fetch()
-      const forceRawFetch = fileHasAuthFlow(parsed.pairs);
+      // Si le fichier contient des endpoints d'auth session, tout passe par fetch()
+      const forceRawFetch = fileHasSessionAuth(parsed.pairs);
 
       // Cookie jar par fichier (comme le test de référence REST)
       const cookieJar = new Map();
@@ -211,7 +217,7 @@ if (!existsSync(functionalDir)) {
             compareResponse(actual, expected, context);
           } else {
             const headersObj = headersToObject(request.headers);
-            const { adaptable, reason } = adapter.canAdapt(
+            const { adaptable, reason, headers: adaptHeaders } = adapter.canAdapt(
               request.method, request.path, headersObj, request.body
             );
 
@@ -223,7 +229,8 @@ if (!existsSync(functionalDir)) {
               const actual = await adapter.executeAsResponse(
                 request.method,
                 request.path,
-                request.body || undefined
+                request.body || undefined,
+                adaptHeaders
               );
               compareResponse(actual, expected, context);
             } else {

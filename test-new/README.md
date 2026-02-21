@@ -7,7 +7,7 @@ Tests automatises validant la librairie JavaScript **JS-CRUD-API** (`esm/index.j
 Les tests fonctionnels de PHP-CRUD-API sont des fichiers `.log` decrivant des sequences de requetes REST et de reponses attendues. Deux runners les rejouent :
 
 - **REST** (`test:rest`) : appels `fetch()` directs vers l'API PHP, servant de reference.
-- **JCA** (`test:jca`) : appels via la librairie JS-CRUD-API grace a un adaptateur qui traduit les requetes REST en methodes JS (`list`, `read`, `create`, `update`, `delete`). Les requetes non adaptables (batch, XML, auth, etc.) retombent automatiquement sur `fetch()`.
+- **JCA** (`test:jca`) : appels via la librairie JS-CRUD-API grace a un adaptateur qui traduit les requetes REST en methodes JS (`list`, `read`, `create`, `update`, `delete`). Les auth par API Key passent par la librairie via `config.headers`. En navigateur, JWT, Basic Auth et dbAuth sont egalement routes via la librairie. Les requetes non adaptables (batch create/update, XML, auth session en Node.js, etc.) retombent automatiquement sur `fetch()`.
 
 Une **interface navigateur** permet egalement d'executer ces tests dans le browser.
 
@@ -113,22 +113,56 @@ Les tests se lancent automatiquement au chargement de la page.
 
 L'adaptateur (`shared/jca-adapter.js` pour Node, `browser/src/test-adapter.js` pour le navigateur) traduit les requetes REST en appels JS-CRUD-API :
 
-| REST                           | JS-CRUD-API                    |
-|--------------------------------|--------------------------------|
-| `GET /records/posts`           | `api.list('posts')`            |
-| `GET /records/posts/1`         | `api.read('posts', 1)`         |
-| `POST /records/posts`          | `api.create('posts', {...})`   |
-| `PUT /records/posts/1`         | `api.update('posts', 1, {...})`|
-| `DELETE /records/posts/1`      | `api.delete('posts', 1)`       |
+| REST                           | JS-CRUD-API                          |
+|--------------------------------|--------------------------------------|
+| `GET /records/posts`           | `api.list('posts')`                  |
+| `GET /records/posts/1`         | `api.read('posts', 1)`               |
+| `GET /records/posts/1,2`       | `api.read('posts', '1,2')`           |
+| `POST /records/posts`          | `api.create('posts', {...})`         |
+| `PUT /records/posts/1`         | `api.update('posts', 1, {...})`      |
+| `DELETE /records/posts/1`      | `api.delete('posts', 1)`             |
+| `DELETE /records/posts/1,2`    | `api.delete('posts', '1,2')`         |
+| `POST /login`                  | `api.login(user, pass)` (navigateur) |
+| `POST /logout`                 | `api.logout()` (navigateur)          |
+| `GET /me`                      | `api.me()` (navigateur)              |
+| `POST /register`               | `api.register(user, pass)` (nav.)    |
+| `POST /password`               | `api.password(user, pass, new)` (nav.)|
+
+Les headers d'authentification (JWT, Basic, API Key) sont transmis via `config.headers` en creant une instance temporaire de la librairie.
 
 La methode `canAdapt(method, path, headers, body)` determine si une requete peut passer par la librairie. Les requetes non adaptables retombent sur `fetch()` :
 
 - Endpoints non-CRUD (`/columns`, `/openapi`, `/cache`)
 - Content-Type `application/x-www-form-urlencoded`
 - Query params non supportes (`?format=xml`, `?q=`)
-- IDs multiples (`/records/posts/1,2`)
-- Batch (tableaux POST/PUT)
-- Flux d'authentification (cookies de session non partages)
+- Batch create (POST avec body tableau) — risque d'erreurs partielles (status 424)
+- Batch update (PUT avec IDs multiples) — risque d'erreurs partielles (status 424)
+- Endpoints dbAuth en Node.js (`/login`, `/logout`, `/me`, etc.) — cookies non geres
+
+### Strategie d'authentification dans les tests
+
+Les tests d'authentification (`002_auth/`) utilisent trois mecanismes, traites differemment selon leur dependance aux sessions PHP :
+
+**API Key (stateless)** — `X-API-Key`, `X-API-Key-DB` :
+- Les headers sont transmis a la librairie via `config.headers`
+- Une instance temporaire de JS-CRUD-API est creee pour chaque requete avec ces headers
+- Fonctionne en **Node.js et navigateur** via la librairie
+- Fichiers concernes : `004_api_key`, `005_api_key_db`
+
+**JWT et Basic Auth (session PHP)** — `X-Authorization`, `Authorization` :
+- PHP-CRUD-API valide le token/credentials et stocke le resultat en `$_SESSION`
+- Les requetes suivantes dans le fichier dependent de l'etat de session (cookies `PHPSESSID`)
+- En **navigateur** : un adaptateur avec `credentials: 'include'` est cree pour partager les cookies. Les requetes passent par la librairie avec les headers d'auth transmis via `config.headers`
+- En **Node.js** : `fetch` natif n'a pas de cookie jar. Ces fichiers restent sur `fetch()` avec gestion manuelle des cookies
+- Fichiers concernes : `001_jwt`, `002_basic_auth`
+
+**dbAuth (session PHP)** — login, logout, register, password, me :
+- Necessite des cookies de session (`PHPSESSID`) partages entre les requetes
+- En **navigateur** : un adaptateur avec `credentials: 'include'` route les endpoints dbAuth vers les methodes de la librairie (`api.login()`, `api.logout()`, `api.me()`, etc.)
+- En **Node.js** : ces fichiers restent entierement sur `fetch()` avec gestion manuelle des cookies
+- Fichier concerne : `003_db_auth`
+
+**Divergence mineure** : la methode `logout()` de la librairie envoie `{}` comme body (`JSON.stringify({})`) alors que PHP-CRUD-API attend un POST sans body. Cela n'a pas d'impact car le serveur ignore le body du logout.
 
 ### Log parser
 

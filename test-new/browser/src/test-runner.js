@@ -6,8 +6,12 @@ import { parseLogFile, toJsonIfPossible } from '../../shared/log-parser.js';
 import { normalizeResponse, buildUrl } from '../../shared/normalizers.js';
 import { TestAdapter } from './test-adapter.js';
 
-const AUTH_ENDPOINTS = ['/login', '/logout', '/register', '/password', '/me'];
-const AUTH_HEADERS = ['x-authorization', 'authorization', 'x-api-key', 'x-api-key-db'];
+const SESSION_AUTH_ENDPOINTS = ['/login', '/logout', '/register', '/password', '/me'];
+// JWT (X-Authorization) et Basic (Authorization) créent des sessions PHP.
+// Les requêtes suivantes dans le même fichier dépendent de l'état de session,
+// nécessitant credentials: 'include' pour partager les cookies.
+// Les API Key (X-API-Key, X-API-Key-DB) ne créent pas cette dépendance de session.
+const SESSION_CREATING_HEADERS = ['x-authorization', 'authorization'];
 
 /**
  * Restaure la casse standard des headers HTTP.
@@ -27,17 +31,18 @@ const HEADER_CASE_MAP = {
 const normalizeHeaderName = (name) => HEADER_CASE_MAP[name] || name;
 
 /**
- * Détermine si un fichier .log contient des flux d'auth.
- * Ces fichiers doivent être traités entièrement via fetch() pour maintenir
- * la cohérence des cookies de session entre les requêtes.
+ * Détermine si un fichier .log nécessite la gestion de session (cookies).
+ * Détecte les endpoints dbAuth ET les headers JWT/Basic qui créent des sessions PHP.
+ * En navigateur : un adaptateur avec credentials: 'include' est créé pour ces fichiers.
+ * Les API Key passent par la librairie via config.headers (pas de dépendance session).
  */
-const fileHasAuthFlow = (pairs) => {
+const fileHasSessionAuth = (pairs) => {
   return pairs.some(({ request }) => {
     const pathOnly = request.path.split('?')[0];
-    if (AUTH_ENDPOINTS.includes(pathOnly)) return true;
+    if (SESSION_AUTH_ENDPOINTS.includes(pathOnly)) return true;
     if (request.headers instanceof Map) {
       for (const key of request.headers.keys()) {
-        if (AUTH_HEADERS.includes(key)) return true;
+        if (SESSION_CREATING_HEADERS.includes(key)) return true;
       }
     }
     return false;
@@ -145,15 +150,19 @@ export class TestRunner {
     // le navigateur gère aussi ses propres cookies en parallèle)
     const cookieJar = new Map();
 
-    // Si le fichier contient des flux d'auth, tout passe par fetch()
-    const forceRawFetch = fileHasAuthFlow(parsed.pairs);
+    // Si le fichier contient des endpoints d'auth session, utiliser un adaptateur
+    // avec credentials: 'include' pour supporter les cookies (dbAuth)
+    const hasSessionAuth = fileHasSessionAuth(parsed.pairs);
+    const currentAdapter = hasSessionAuth
+      ? new TestAdapter(this.baseUrl, { credentials: 'include' })
+      : this.adapter;
 
     // Exécuter chaque paire requête/réponse
     for (let i = 0; i < parsed.pairs.length; i++) {
       const { request, response: expectedResponse } = parsed.pairs[i];
 
       try {
-        const actualResponse = await this.executeRequest(request, cookieJar, forceRawFetch);
+        const actualResponse = await this.executeRequest(request, cookieJar, currentAdapter);
         this.compareResponse(actualResponse, expectedResponse, `${testPath} [${i + 1}]`);
       } catch (error) {
         this.reporter.reportTest(testPath, {
@@ -176,7 +185,7 @@ export class TestRunner {
   /**
    * Exécute une requête HTTP (via adaptateur JS-CRUD-API ou fetch direct)
    */
-  async executeRequest(request, cookieJar, forceRawFetch = false) {
+  async executeRequest(request, cookieJar, adapter) {
     // Convertir Map headers en objet pour canAdapt()
     const headersObj = {};
     if (request.headers && request.headers instanceof Map) {
@@ -186,16 +195,10 @@ export class TestRunner {
     }
 
     // Décider si on utilise l'adaptateur ou fetch direct
-    let useAdapter = false;
-    let reason = '';
-
-    if (forceRawFetch) {
-      reason = 'fichier auth (fetch forcé)';
-    } else {
-      const result = this.adapter.canAdapt(request.method, request.path, headersObj, request.body);
-      useAdapter = result.adaptable;
-      reason = result.reason || '';
-    }
+    const result = adapter.canAdapt(request.method, request.path, headersObj, request.body);
+    const useAdapter = result.adaptable;
+    const reason = result.reason || '';
+    const adaptHeaders = result.headers;
 
     if (useAdapter && this.logRequests) {
       console.log(`🔄 Via JS-CRUD-API: ${request.method} ${request.path}`);
@@ -204,10 +207,11 @@ export class TestRunner {
     if (useAdapter) {
       // Utiliser l'adaptateur JS-CRUD-API
       try {
-        const response = await this.adapter.executeAsResponse(
+        const response = await adapter.executeAsResponse(
           request.method,
           request.path,
-          request.body
+          request.body,
+          adaptHeaders
         );
 
         if (this.logRequests) {

@@ -7,19 +7,23 @@ import jscrudapi from '../../esm/index.js';
 
 export class JcaAdapter {
   #api;
+  #baseUrl;
 
   constructor(baseUrl) {
+    this.#baseUrl = baseUrl;
     this.#api = jscrudapi(baseUrl);
   }
 
   /**
    * Détermine si une requête peut être adaptée à JS-CRUD-API.
-   * Retourne un objet { adaptable, reason } pour documenter les skips.
+   * Retourne un objet { adaptable, reason, headers } pour documenter les skips.
+   * Si adaptable, headers contient les headers d'auth à transmettre via config.headers.
    *
    * @param {string} method - Méthode HTTP
    * @param {string} path   - Chemin (ex: /records/posts/1?include=id)
    * @param {object} headers - Headers sous forme d'objet plat
    * @param {string} body   - Corps de la requête (optionnel)
+   * @returns {{ adaptable: boolean, reason: string|null, headers?: object }}
    */
   canAdapt(method, path, headers = {}, body = '') {
     const contentType = headers['content-type'] || headers['Content-Type'] || '';
@@ -28,20 +32,6 @@ export class JcaAdapter {
     }
     if (contentType.includes('application/xml')) {
       return { adaptable: false, reason: 'XML non supporté' };
-    }
-
-    // Headers d'authentification non transmissibles via JS-CRUD-API
-    if (headers['x-api-key'] || headers['X-API-Key']) {
-      return { adaptable: false, reason: 'header X-API-Key non transmis' };
-    }
-    if (headers['x-api-key-db'] || headers['X-API-Key-DB']) {
-      return { adaptable: false, reason: 'header X-API-Key-DB non transmis' };
-    }
-    if (headers['x-authorization'] || headers['X-Authorization']) {
-      return { adaptable: false, reason: 'header X-Authorization (JWT) non transmis' };
-    }
-    if (headers['authorization'] || headers['Authorization']) {
-      return { adaptable: false, reason: 'header Authorization non transmis' };
     }
 
     // OPTIONS (CORS preflight) n'est pas géré par la librairie
@@ -81,6 +71,9 @@ export class JcaAdapter {
       }
     }
 
+    // Collecter les headers d'auth pour transmission via config.headers
+    const authHeaders = this.#collectAuthHeaders(headers);
+
     // Endpoints CRUD (/records/...)
     if (pathOnly.startsWith('/records/')) {
       const parts = pathOnly.split('/').filter(Boolean);
@@ -110,7 +103,7 @@ export class JcaAdapter {
         }
       }
 
-      return { adaptable: true, reason: null };
+      return { adaptable: true, reason: null, headers: authHeaders };
     }
 
     // Endpoints d'authentification : pas adaptables en Node.js
@@ -122,6 +115,27 @@ export class JcaAdapter {
 
     // Tous les autres endpoints : non supportés
     return { adaptable: false, reason: `endpoint ${pathOnly} non supporté` };
+  }
+
+  /**
+   * Collecte et normalise les headers d'authentification.
+   * Retourne un objet avec les noms de headers en casse standard,
+   * ou undefined si aucun header d'auth n'est présent.
+   */
+  #collectAuthHeaders(headers) {
+    const AUTH_HEADER_MAP = {
+      'x-api-key': 'X-API-Key',
+      'x-api-key-db': 'X-API-Key-DB',
+      'x-authorization': 'X-Authorization',
+      'authorization': 'Authorization',
+    };
+    const result = {};
+    for (const [lower, proper] of Object.entries(AUTH_HEADER_MAP)) {
+      if (headers[lower] || headers[proper]) {
+        result[proper] = headers[lower] || headers[proper];
+      }
+    }
+    return Object.keys(result).length > 0 ? result : undefined;
   }
 
   /**
@@ -169,7 +183,10 @@ export class JcaAdapter {
    * Exécute une requête via JS-CRUD-API.
    * Retourne la donnée ou lance une erreur {code, message}.
    */
-  async execute(method, path, body) {
+  async execute(method, path, body, headers) {
+    const api = (headers && Object.keys(headers).length > 0)
+      ? jscrudapi(this.#baseUrl, { headers })
+      : this.#api;
     const { parts, conditions } = this.#parsePath(path);
 
     if (parts[0] !== 'records') {
@@ -183,25 +200,25 @@ export class JcaAdapter {
     switch (method) {
       case 'GET':
         if (id) {
-          return this.#api.read(table, id, hasConditions ? conditions : undefined);
+          return api.read(table, id, hasConditions ? conditions : undefined);
         }
-        return this.#api.list(table, hasConditions ? conditions : undefined);
+        return api.list(table, hasConditions ? conditions : undefined);
 
       case 'POST': {
         const data = typeof body === 'string' ? JSON.parse(body) : body;
-        return this.#api.create(table, data);
+        return api.create(table, data);
       }
 
       case 'PUT':
       case 'PATCH': {
         if (!id) throw { code: -1, message: 'ID requis pour UPDATE' };
         const data = typeof body === 'string' ? JSON.parse(body) : body;
-        return this.#api.update(table, id, data);
+        return api.update(table, id, data);
       }
 
       case 'DELETE':
         if (!id) throw { code: -1, message: 'ID requis pour DELETE' };
-        return this.#api.delete(table, id);
+        return api.delete(table, id);
 
       default:
         throw { code: -1, message: `Méthode HTTP non supportée: ${method}` };
@@ -212,9 +229,9 @@ export class JcaAdapter {
    * Exécute une requête et retourne un objet réponse comparable
    * au format {status, body} attendu par les tests.
    */
-  async executeAsResponse(method, path, body) {
+  async executeAsResponse(method, path, body, headers) {
     try {
-      const data = await this.execute(method, path, body);
+      const data = await this.execute(method, path, body, headers);
       return {
         status: 200,
         body: JSON.stringify(data),
