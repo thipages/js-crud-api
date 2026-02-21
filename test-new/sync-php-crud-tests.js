@@ -58,7 +58,7 @@ const main = async () => {
 
   await copyTests();
 
-  console.log('Tests synchronisés dans test-new/php-crud-tests');
+  console.log('Tests synced to test-new/php-crud-tests');
 };
 
 main().catch((err) => {

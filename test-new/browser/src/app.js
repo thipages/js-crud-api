@@ -1,5 +1,5 @@
 /**
- * Application principale des tests navigateur
+ * Main application for browser tests
  */
 
 import { parseLogFile } from '../../shared/log-parser.js';
@@ -10,38 +10,38 @@ let testData = null;
 let testRunner = null;
 let currentFilter = 'all';
 
-// Exposer currentFilter globalement pour le reporter
+// Expose currentFilter globally for the reporter
 window.currentFilter = 'all';
 
 /**
- * Charge les données de test depuis le fichier JSON bundlé
+ * Loads test data from the bundled JSON file
  */
 async function loadTestData() {
   try {
     const response = await fetch('./test-data.json');
     if (!response.ok) {
-      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
     testData = await response.json();
-    console.log('✅ Tests chargés:', Object.keys(testData).length, 'fichiers');
+    console.log('Tests loaded:', Object.keys(testData).length, 'files');
     return testData;
   } catch (error) {
-    console.error('❌ Erreur lors du chargement des tests:', error);
-    alert('Impossible de charger les tests. Assurez-vous que test-data.json existe (lancez: npm run test:build)');
+    console.error('Error loading tests:', error);
+    alert('Unable to load tests. Make sure test-data.json exists (run: npm run test:build)');
     throw error;
   }
 }
 
 /**
- * Remplit le sélecteur de suites de tests
+ * Populates the test suite selector
  */
 function populateTestSuiteSelector(data) {
   const select = document.getElementById('testSuite');
-  select.innerHTML = '<option value="">-- Toutes les suites --</option>';
-  
-  // Regrouper par catégorie (001_records, 002_auth, etc.)
+  select.innerHTML = '<option value="">-- All suites --</option>';
+
+  // Group by category (001_records, 002_auth, etc.)
   const categories = new Map();
-  
+
   for (const path of Object.keys(data)) {
     const match = path.match(/^(\d+_\w+)\//);
     if (match) {
@@ -52,18 +52,18 @@ function populateTestSuiteSelector(data) {
       categories.get(category).push(path);
     }
   }
-  
-  // Ajouter les catégories
+
+  // Add categories
   for (const [category, files] of categories) {
     const option = document.createElement('option');
     option.value = category;
     option.textContent = `${category} (${files.length} tests)`;
     select.appendChild(option);
   }
-  
-  // Ajouter les tests individuels
+
+  // Add individual tests
   const individualGroup = document.createElement('optgroup');
-  individualGroup.label = 'Tests individuels';
+  individualGroup.label = 'Individual tests';
   for (const path of Object.keys(data)) {
     const option = document.createElement('option');
     option.value = path;
@@ -74,72 +74,72 @@ function populateTestSuiteSelector(data) {
 }
 
 /**
- * Récupère les tests à exécuter selon la sélection
+ * Gets the tests to run based on selection
  */
 function getTestsToRun() {
   const selected = document.getElementById('testSuite').value;
-  
+
   if (!selected) {
-    // Tous les tests
+    // All tests
     return Object.entries(testData);
   } else if (selected.includes('/')) {
-    // Test individuel
+    // Individual test
     return [[selected, testData[selected]]];
   } else {
-    // Catégorie
+    // Category
     return Object.entries(testData).filter(([path]) => path.startsWith(selected + '/'));
   }
 }
 
 /**
- * Lance les tests
+ * Runs the tests
  */
 async function runTests() {
-  console.log('▶️ runTests() appelée');
+  console.log('runTests() called');
   const baseUrl = document.getElementById('baseUrl').value;
   const strictMode = document.getElementById('strictMode').checked;
   const logRequests = document.getElementById('logRequests').checked;
-  
+
   if (!baseUrl) {
-    alert('Veuillez entrer une URL de base');
+    alert('Please enter a base URL');
     return;
   }
-  
+
   const tests = getTestsToRun();
-  
+
   if (tests.length === 0) {
-    alert('Aucun test à exécuter');
+    alert('No tests to run');
     return;
   }
 
-  console.log(`📋 ${tests.length} tests à exécuter`);
+  console.log(`${tests.length} tests to run`);
 
-  // Reset automatique de la base avant les tests
-  console.log('🔄 Reset automatique de la base de données...');
+  // Auto-reset database before tests
+  console.log('Auto-resetting database...');
   try {
     await resetDatabaseSilent(baseUrl);
-    console.log('✅ Base réinitialisée');
+    console.log('Database reset done');
   } catch (error) {
-    console.warn('⚠️ Reset DB échoué (ignoré):', error.message);
+    console.warn('DB reset failed (ignored):', error.message);
   }
-  
-  console.log('🚀 Démarrage des tests...');
-  
-  // Préparer l'interface
+
+  console.log('Starting tests...');
+
+  // Prepare the interface
   document.getElementById('runTests').disabled = true;
   document.getElementById('runAllTests').disabled = true;
   document.getElementById('stopTests').disabled = false;
   document.getElementById('resultsContainer').innerHTML = '';
-  
-  // Créer le runner et le reporter
+
+  // Create runner and reporter
   const reporter = new TestReporter();
   testRunner = new TestRunner(baseUrl, { strictMode, logRequests }, reporter);
-  
+
   try {
     await testRunner.runTests(tests);
   } catch (error) {
-    console.error('Erreur lors de l\'exécution:', error);
-    alert('Erreur: ' + error.message);
+    console.error('Execution error:', error);
+    alert('Error: ' + error.message);
   } finally {
     document.getElementById('runTests').disabled = false;
     document.getElementById('runAllTests').disabled = false;
@@ -149,12 +149,12 @@ async function runTests() {
 }
 
 /**
- * Reset de la base de données (silencieux, pour auto-reset)
+ * Silent database reset (for auto-reset)
  */
 async function resetDatabaseSilent(baseUrl) {
   const url = new URL(baseUrl);
   const resetUrl = url.origin + url.pathname.replace(/api\.php.*$/, 'reset-db.php');
-  
+
   const response = await fetch(resetUrl);
   if (!response.ok) {
     throw new Error(`Reset DB failed: ${response.status}`);
@@ -162,44 +162,44 @@ async function resetDatabaseSilent(baseUrl) {
 }
 
 /**
- * Reset de la base de données
+ * Database reset
  */
 async function resetDatabase() {
   const baseUrl = document.getElementById('baseUrl').value;
   if (!baseUrl) {
-    alert('Veuillez entrer une URL de base');
+    alert('Please enter a base URL');
     return;
   }
-  
-  // Extraire le baseURL sans api.php
+
+  // Extract the baseURL without api.php
   const url = new URL(baseUrl);
   const resetUrl = url.origin + url.pathname.replace(/api\.php.*$/, 'reset-db.php');
-  
-  if (!confirm(`Voulez-vous vraiment réinitialiser la base de données?\n\nURL: ${resetUrl}`)) {
+
+  if (!confirm(`Do you really want to reset the database?\n\nURL: ${resetUrl}`)) {
     return;
   }
-  
+
   try {
     const btn = document.getElementById('resetDb');
     btn.disabled = true;
-    btn.textContent = '⏳ Reset en cours...';
-    
+    btn.textContent = 'Resetting...';
+
     await resetDatabaseSilent(baseUrl);
-    
+
     console.log('Reset DB: success');
-    alert('✅ Base de données réinitialisée avec succès');
+    alert('Database reset successfully');
   } catch (error) {
-    console.error('Erreur reset DB:', error);
-    alert('❌ Erreur lors du reset de la DB:\n' + error.message + '\n\nAssurez-vous que reset-db.php existe et est accessible.');
+    console.error('Reset DB error:', error);
+    alert('DB reset error:\n' + error.message + '\n\nMake sure reset-db.php exists and is accessible.');
   } finally {
     const btn = document.getElementById('resetDb');
     btn.disabled = false;
-    btn.textContent = '🔄 Reset DB';
+    btn.textContent = 'Reset DB';
   }
 }
 
 /**
- * Arrête les tests en cours
+ * Stops running tests
  */
 function stopTests() {
   if (testRunner) {
@@ -208,22 +208,22 @@ function stopTests() {
 }
 
 /**
- * Copie le contenu du textarea export
+ * Copies the export textarea content
  */
 function copyExport() {
   const textarea = document.getElementById('exportTextarea');
   if (!textarea.value) {
     return;
   }
-  
+
   textarea.select();
   navigator.clipboard.writeText(textarea.value).catch(err => {
-    console.error('Erreur copie:', err);
+    console.error('Copy error:', err);
   });
 }
 
 /**
- * Gère les filtres de résultats
+ * Sets up result filters
  */
 function setupFilters() {
   const filterBtns = document.querySelectorAll('.filter-btn');
@@ -232,19 +232,19 @@ function setupFilters() {
       filterBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFilter = btn.dataset.filter;
-      window.currentFilter = currentFilter; // Exposer globalement
+      window.currentFilter = currentFilter; // Expose globally
       applyFilter();
     });
   });
 }
 
 /**
- * Applique le filtre actuel
+ * Applies the current filter
  */
 function applyFilter() {
   const results = document.querySelectorAll('.test-result');
-  console.log(`Filtre: ${currentFilter}, Résultats trouvés: ${results.length}`);
-  
+  console.log(`Filter: ${currentFilter}, Results found: ${results.length}`);
+
   let visibleCount = 0;
   results.forEach(result => {
     if (currentFilter === 'all') {
@@ -254,15 +254,15 @@ function applyFilter() {
       const hasClass = result.classList.contains(currentFilter);
       result.style.display = hasClass ? '' : 'none';
       if (hasClass) visibleCount++;
-      console.log(`Élément: classes=${result.className}, filter=${currentFilter}, visible=${hasClass}`);
+      console.log(`Element: classes=${result.className}, filter=${currentFilter}, visible=${hasClass}`);
     }
   });
-  
-  console.log(`${visibleCount} résultats visibles après filtre`);
+
+  console.log(`${visibleCount} results visible after filter`);
 }
 
 /**
- * Sauvegarde la configuration dans localStorage
+ * Saves configuration to localStorage
  */
 function saveConfig() {
   const config = {
@@ -274,23 +274,23 @@ function saveConfig() {
 }
 
 /**
- * Calcule l'URL par défaut de l'API depuis l'origine de la page.
- * En same-origin, on évite tout problème CORS.
+ * Computes the default API URL from the page origin.
+ * Same-origin avoids any CORS issues.
  */
 function getDefaultBaseUrl() {
   return `${window.location.origin}/api.php`;
 }
 
 /**
- * Charge la configuration depuis localStorage
+ * Loads configuration from localStorage
  */
 function loadConfig() {
   const defaultUrl = getDefaultBaseUrl();
   try {
     const config = JSON.parse(localStorage.getItem('jca-test-config'));
     if (config) {
-      // Ignorer les URL sauvegardées cross-origin (port différent)
-      // pour éviter les erreurs CORS
+      // Ignore saved cross-origin URLs (different port)
+      // to avoid CORS errors
       const savedUrl = config.baseUrl || '';
       const isSameOrigin = savedUrl.startsWith(window.location.origin);
       document.getElementById('baseUrl').value = isSameOrigin ? savedUrl : defaultUrl;
@@ -299,34 +299,34 @@ function loadConfig() {
       return;
     }
   } catch (error) {
-    // Ignorer les erreurs de parsing
+    // Ignore parsing errors
   }
   document.getElementById('baseUrl').value = defaultUrl;
 }
 
 /**
- * Initialise l'application
+ * Initializes the application
  */
 export async function initApp() {
-  console.log('🚀 Initialisation de l\'application de tests...');
-  
-  // Charger la config sauvegardée
+  console.log('Initializing test application...');
+
+  // Load saved config
   loadConfig();
-  
-  // Sauvegarder la config à chaque modification
+
+  // Save config on each change
   document.getElementById('baseUrl').addEventListener('change', saveConfig);
   document.getElementById('strictMode').addEventListener('change', saveConfig);
   document.getElementById('logRequests').addEventListener('change', saveConfig);
-  
-  // Charger les données de test
+
+  // Load test data
   try {
     await loadTestData();
     populateTestSuiteSelector(testData);
   } catch (error) {
     return;
   }
-  
-  // Setup des event listeners
+
+  // Setup event listeners
   document.getElementById('runTests').addEventListener('click', runTests);
   document.getElementById('runAllTests').addEventListener('click', () => {
     document.getElementById('testSuite').value = '';
@@ -335,11 +335,11 @@ export async function initApp() {
   document.getElementById('resetDb').addEventListener('click', resetDatabase);
   document.getElementById('stopTests').addEventListener('click', stopTests);
   document.getElementById('copyExport').addEventListener('click', copyExport);
-  
+
   setupFilters();
-  
-  console.log('✅ Application prête!');
-  
-  // Auto-lancer les tests au chargement
+
+  console.log('Application ready');
+
+  // Auto-run tests on load
   setTimeout(() => runTests(), 500);
 }

@@ -31,25 +31,25 @@ const compareResponse = (actual, expected, context) => {
   assert.equal(
     actual.status,
     expected.status,
-    `Status attendu ${expected.status}, reçu ${actual.status} | ${context}`
+    `Expected status ${expected.status}, got ${actual.status} | ${context}`
   );
 
   const actualBody = normalizeResponse(toJsonIfPossible(actual.body));
   const expectedBody = normalizeResponse(toJsonIfPossible(expected.body));
-  assert.deepEqual(actualBody, expectedBody, `Body différent | ${context}`);
+  assert.deepEqual(actualBody, expectedBody, `Body mismatch | ${context}`);
 
   if (strict) {
     for (const [name, values] of expected.headers.entries()) {
       if (name === 'content-length') continue;
       const actualValues = actual.headers.get(name) || [];
-      assert.deepEqual(actualValues, values, `Header ${name} différent | ${context}`);
+      assert.deepEqual(actualValues, values, `Header ${name} mismatch | ${context}`);
     }
   }
 };
 
 if (!existsSync(functionalDir)) {
-  test('tests téléchargés absents', () => {
-    assert.fail('Aucun test trouvé. Lancez: npm run test:sync');
+  test('downloaded tests missing', () => {
+    assert.fail('No tests found. Run: npm run test:sync');
   });
 } else {
   test('PHP-CRUD-API REST tests (SQLite)', async () => {
@@ -64,14 +64,14 @@ if (!existsSync(functionalDir)) {
         stdio: ['pipe', 'inherit', 'inherit'],
       });
       if (init.status !== 0) {
-        throw new Error('SQLite init failed. Vérifie sqlite3 et le chemin des fixtures.');
+        throw new Error('SQLite init failed. Check sqlite3 and fixture path.');
       }
     }
 
     if (logRequests) console.log(`[REST] baseUrl=${baseUrl}`);
 
     const logFiles = await walkLogs(functionalDir);
-    assert.ok(logFiles.length > 0, 'Aucun fichier .log trouvé');
+    assert.ok(logFiles.length > 0, 'No .log files found');
 
     for (const file of logFiles) {
       if (file.includes('redirect_to_ssl.log')) {
@@ -92,8 +92,8 @@ if (!existsSync(functionalDir)) {
       for (let i = 0; i < parsed.pairs.length; i++) {
         const { request, response: expected } = parsed.pairs[i];
 
-        assert.ok(request.method, `Requête invalide dans ${file}`);
-        assert.ok(request.path, `Chemin invalide dans ${file}`);
+        assert.ok(request.method, `Invalid request in ${file}`);
+        assert.ok(request.path, `Invalid path in ${file}`);
 
         const headers = {};
         for (const [name, values] of request.headers.entries()) {

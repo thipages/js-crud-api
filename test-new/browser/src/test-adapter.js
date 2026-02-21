@@ -1,6 +1,6 @@
 /**
- * Adaptateur REST → JS-CRUD-API (navigateur)
- * Traduit les requêtes REST brutes en appels à la librairie JS-CRUD-API
+ * REST -> JS-CRUD-API adapter (browser)
+ * Translates raw REST requests into JS-CRUD-API library calls
  */
 
 import JSCRUDAPI from '../lib/js-crud-api.js';
@@ -9,119 +9,119 @@ export class TestAdapter {
   constructor(baseUrl, options = {}) {
     this.baseUrl = baseUrl;
     this.options = options;
-    // credentials: 'omit' par défaut empêche le navigateur d'envoyer les cookies (PHPSESSID)
-    // sur les requêtes de la librairie. Cela reproduit le comportement Node.js.
-    // Pour les tests dbAuth, utiliser credentials: 'include' pour activer les cookies.
+    // credentials: 'omit' by default prevents the browser from sending cookies (PHPSESSID)
+    // on library requests. This reproduces Node.js behavior.
+    // For dbAuth tests, use credentials: 'include' to enable cookies.
     this.api = JSCRUDAPI(baseUrl, { credentials: options.credentials || 'omit' });
   }
 
   /**
-   * Détermine si une requête peut être adaptée à JS-CRUD-API.
-   * Retourne un objet { adaptable, reason, headers } pour documenter les skips.
-   * Si adaptable, headers contient les headers d'auth à transmettre via config.headers.
+   * Determines whether a request can be adapted to JS-CRUD-API.
+   * Returns an object { adaptable, reason, headers } to document skips.
+   * If adaptable, headers contains the auth headers to pass via config.headers.
    *
-   * @param {string} method - Méthode HTTP
-   * @param {string} path   - Chemin (ex: /records/posts/1?include=id)
-   * @param {object} headers - Headers sous forme d'objet plat
-   * @param {string} body   - Corps de la requête (optionnel)
+   * @param {string} method - HTTP method
+   * @param {string} path   - Path (e.g. /records/posts/1?include=id)
+   * @param {object} headers - Headers as a flat object
+   * @param {string} body   - Request body (optional)
    * @returns {{ adaptable: boolean, reason: string|null, headers?: object }}
    */
   canAdapt(method, path, headers = {}, body = '') {
     const contentType = headers['content-type'] || headers['Content-Type'] || '';
     if (contentType.includes('application/x-www-form-urlencoded')) {
-      return { adaptable: false, reason: 'form-encoded non supporté' };
+      return { adaptable: false, reason: 'form-encoded not supported' };
     }
     if (contentType.includes('application/xml')) {
-      return { adaptable: false, reason: 'XML non supporté' };
+      return { adaptable: false, reason: 'XML not supported' };
     }
 
-    // OPTIONS (CORS preflight) n'est pas géré par la librairie
+    // OPTIONS (CORS preflight) is not handled by the library
     if (method === 'OPTIONS') {
-      return { adaptable: false, reason: 'CORS preflight non supporté' };
+      return { adaptable: false, reason: 'CORS preflight not supported' };
     }
 
-    // PATCH n'existe pas dans la librairie (update() envoie PUT).
-    // PATCH a une sémantique incrémentale côté PHP-CRUD-API,
-    // donc on doit passer par fetch() pour préserver ce comportement.
+    // PATCH does not exist in the library (update() sends PUT).
+    // PATCH has incremental semantics in PHP-CRUD-API,
+    // so we must use fetch() to preserve this behavior.
     if (method === 'PATCH') {
-      return { adaptable: false, reason: 'PATCH non supporté (la librairie utilise PUT)' };
+      return { adaptable: false, reason: 'PATCH not supported (library uses PUT)' };
     }
 
     const [pathOnly, queryString] = path.split('?');
 
-    // Body non-JSON (form-encoded, invalide, etc.)
+    // Non-JSON body (form-encoded, invalid, etc.)
     if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
       const trimmed = typeof body === 'string' ? body.trim() : '';
       if (trimmed && !trimmed.startsWith('{') && !trimmed.startsWith('[')) {
-        return { adaptable: false, reason: 'body non-JSON (form-encoded ou autre)' };
+        return { adaptable: false, reason: 'non-JSON body (form-encoded or other)' };
       }
       if (trimmed) {
         try { JSON.parse(trimmed); } catch {
-          return { adaptable: false, reason: 'body JSON invalide' };
+          return { adaptable: false, reason: 'invalid JSON body' };
         }
       }
     }
 
-    // Query params non supportés
+    // Unsupported query params
     if (queryString) {
       if (queryString.includes('format=')) {
-        return { adaptable: false, reason: 'format XML non supporté' };
+        return { adaptable: false, reason: 'XML format not supported' };
       }
       if (queryString.includes('q=')) {
-        return { adaptable: false, reason: 'recherche textuelle non supportée' };
+        return { adaptable: false, reason: 'text search not supported' };
       }
     }
 
-    // Collecter les headers d'auth pour transmission via config.headers
+    // Collect auth headers for transmission via config.headers
     const authHeaders = this.#collectAuthHeaders(headers);
 
-    // Endpoints CRUD (/records/...)
+    // CRUD endpoints (/records/...)
     if (pathOnly.startsWith('/records/')) {
       const parts = pathOnly.split('/').filter(Boolean);
       const hasMultipleIds = parts[2] && parts[2].includes(',');
 
-      // PUT avec IDs multiples (batch update) :
-      // js-crud-api perd les erreurs partielles (status 424)
+      // PUT with multiple IDs (batch update):
+      // js-crud-api loses partial errors (status 424)
       if (hasMultipleIds && method === 'PUT') {
-        return { adaptable: false, reason: 'batch update (erreurs partielles non gérées)' };
+        return { adaptable: false, reason: 'batch update (partial errors not handled)' };
       }
 
-      // POST avec body array (batch create) :
-      // js-crud-api perd les erreurs partielles (status 424)
+      // POST with array body (batch create):
+      // js-crud-api loses partial errors (status 424)
       if (method === 'POST' && body) {
         const trimmed = typeof body === 'string' ? body.trim() : '';
         if (trimmed.startsWith('[')) {
-          return { adaptable: false, reason: 'batch create (erreurs partielles non gérées)' };
+          return { adaptable: false, reason: 'batch create (partial errors not handled)' };
         }
       }
 
-      // PUT avec include/exclude : la librairie ne transmet pas
-      // les query params sur update(), ce qui change le comportement serveur
+      // PUT with include/exclude: the library does not pass
+      // query params on update(), which changes server behavior
       if (method === 'PUT' && queryString) {
         const params = new URLSearchParams(queryString);
         if (params.has('include') || params.has('exclude')) {
-          return { adaptable: false, reason: 'include/exclude sur update non supporté' };
+          return { adaptable: false, reason: 'include/exclude on update not supported' };
         }
       }
 
       return { adaptable: true, reason: null, headers: authHeaders };
     }
 
-    // Endpoints d'authentification (dbAuth) : adaptables en navigateur
-    // Les cookies de session fonctionnent avec credentials: 'include'
+    // Auth endpoints (dbAuth): adaptable in browser
+    // Session cookies work with credentials: 'include'
     const authEndpoints = ['/login', '/logout', '/register', '/password', '/me'];
     if (authEndpoints.includes(pathOnly)) {
       return { adaptable: true, reason: null };
     }
 
-    // Tous les autres endpoints : non supportés
-    return { adaptable: false, reason: `endpoint ${pathOnly} non supporté` };
+    // All other endpoints: not supported
+    return { adaptable: false, reason: `endpoint ${pathOnly} not supported` };
   }
 
   /**
-   * Collecte et normalise les headers d'authentification.
-   * Retourne un objet avec les noms de headers en casse standard,
-   * ou undefined si aucun header d'auth n'est présent.
+   * Collects and normalizes authentication headers.
+   * Returns an object with standard-case header names,
+   * or undefined if no auth header is present.
    */
   #collectAuthHeaders(headers) {
     const AUTH_HEADER_MAP = {
@@ -140,7 +140,7 @@ export class TestAdapter {
   }
 
   /**
-   * Parse le path et les query params en conditions JS-CRUD-API
+   * Parses the path and query params into JS-CRUD-API conditions
    */
   parsePath(path) {
     const [pathOnly, queryString] = path.split('?');
@@ -180,7 +180,7 @@ export class TestAdapter {
   }
 
   /**
-   * Exécute une requête via JS-CRUD-API
+   * Executes a request via JS-CRUD-API
    */
   async execute(method, path, body, headers) {
     const api = (headers && Object.keys(headers).length > 0)
@@ -192,7 +192,7 @@ export class TestAdapter {
     const { parts, conditions } = this.parsePath(path);
     const [pathOnly] = path.split('?');
 
-    // Endpoints d'authentification (dbAuth)
+    // Auth endpoints (dbAuth)
     switch (pathOnly) {
       case '/login': {
         const data = typeof body === 'string' ? JSON.parse(body) : body;
@@ -213,7 +213,7 @@ export class TestAdapter {
     }
 
     if (parts[0] !== 'records') {
-      throw { code: -1, message: `Endpoint non supporté: ${path}` };
+      throw { code: -1, message: `Unsupported endpoint: ${path}` };
     }
 
     const table = parts[1];
@@ -233,22 +233,22 @@ export class TestAdapter {
       }
 
       case 'PUT': {
-        if (!id) throw { code: -1, message: 'ID requis pour UPDATE' };
+        if (!id) throw { code: -1, message: 'ID required for UPDATE' };
         const data = typeof body === 'string' ? JSON.parse(body) : body;
         return api.update(table, id, data);
       }
 
       case 'DELETE':
-        if (!id) throw { code: -1, message: 'ID requis pour DELETE' };
+        if (!id) throw { code: -1, message: 'ID required for DELETE' };
         return api.delete(table, id);
 
       default:
-        throw { code: -1, message: `Méthode HTTP non supportée: ${method}` };
+        throw { code: -1, message: `Unsupported HTTP method: ${method}` };
     }
   }
 
   /**
-   * Exécute une requête et retourne un objet réponse comparable
+   * Executes a request and returns a comparable response object
    */
   async executeAsResponse(method, path, body, headers) {
     try {
@@ -278,7 +278,7 @@ export class TestAdapter {
   }
 
   /**
-   * Mappe les codes d'erreur PHP-CRUD-API vers les status HTTP
+   * Maps PHP-CRUD-API error codes to HTTP status codes
    */
   #errorCodeToStatus(code) {
     switch (code) {

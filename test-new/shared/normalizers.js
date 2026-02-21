@@ -1,10 +1,10 @@
 /**
- * Fonctions de normalisation pour les réponses
- * Compatible ESM (Node.js et Browser)
+ * Response normalization functions
+ * ESM compatible (Node.js and Browser)
  */
 
 /**
- * Normalise les adresses IP (::1 → 127.0.0.1)
+ * Normalizes IP addresses (::1 -> 127.0.0.1)
  */
 export const normalizeIpAddress = (value) => {
   if (value === '::1') return '127.0.0.1';
@@ -12,7 +12,7 @@ export const normalizeIpAddress = (value) => {
 };
 
 /**
- * Normalise récursivement les réponses (IP, etc.)
+ * Recursively normalizes responses (IP, etc.)
  */
 export const normalizeResponse = (body) => {
   if (body && typeof body === 'object') {
@@ -32,7 +32,7 @@ export const normalizeResponse = (body) => {
 };
 
 /**
- * Construit une URL complète à partir d'un baseUrl et d'un path
+ * Builds a full URL from a baseUrl and a path
  */
 export const buildUrl = (baseUrl, path) => {
   if (/^https?:\/\//i.test(path)) {

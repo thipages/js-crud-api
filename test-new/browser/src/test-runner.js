@@ -1,5 +1,5 @@
 /**
- * TestRunner - Exécute les tests et compare les résultats
+ * TestRunner - Executes tests and compares results
  */
 
 import { parseLogFile, toJsonIfPossible } from '../../shared/log-parser.js';
@@ -7,17 +7,17 @@ import { normalizeResponse, buildUrl } from '../../shared/normalizers.js';
 import { TestAdapter } from './test-adapter.js';
 
 const SESSION_AUTH_ENDPOINTS = ['/login', '/logout', '/register', '/password', '/me'];
-// JWT (X-Authorization) et Basic (Authorization) créent des sessions PHP.
-// Les requêtes suivantes dans le même fichier dépendent de l'état de session,
-// nécessitant credentials: 'include' pour partager les cookies.
-// Les API Key (X-API-Key, X-API-Key-DB) ne créent pas cette dépendance de session.
+// JWT (X-Authorization) and Basic (Authorization) create PHP sessions.
+// Subsequent requests in the same file depend on session state,
+// requiring credentials: 'include' to share cookies.
+// API Keys (X-API-Key, X-API-Key-DB) do not create this session dependency.
 const SESSION_CREATING_HEADERS = ['x-authorization', 'authorization'];
 
 /**
- * Restaure la casse standard des headers HTTP.
- * Le log-parser met tout en minuscules, mais certains serveurs PHP
- * (et notamment le serveur intégré) sont sensibles à la casse
- * pour les headers d'authentification (Authorization, X-API-Key, etc.)
+ * Restores standard HTTP header casing.
+ * The log-parser lowercases everything, but some PHP servers
+ * (notably the built-in server) are case-sensitive
+ * for authentication headers (Authorization, X-API-Key, etc.)
  */
 const HEADER_CASE_MAP = {
   'authorization': 'Authorization',
@@ -31,10 +31,10 @@ const HEADER_CASE_MAP = {
 const normalizeHeaderName = (name) => HEADER_CASE_MAP[name] || name;
 
 /**
- * Détermine si un fichier .log nécessite la gestion de session (cookies).
- * Détecte les endpoints dbAuth ET les headers JWT/Basic qui créent des sessions PHP.
- * En navigateur : un adaptateur avec credentials: 'include' est créé pour ces fichiers.
- * Les API Key passent par la librairie via config.headers (pas de dépendance session).
+ * Determines whether a .log file requires session handling (cookies).
+ * Detects dbAuth endpoints AND JWT/Basic headers that create PHP sessions.
+ * In browser: an adapter with credentials: 'include' is created for these files.
+ * API Keys go through the library via config.headers (no session dependency).
  */
 const fileHasSessionAuth = (pairs) => {
   return pairs.some(({ request }) => {
@@ -60,15 +60,15 @@ export class TestRunner {
   }
 
   /**
-   * Arrête l'exécution des tests
+   * Stops test execution
    */
   stop() {
     this.stopped = true;
-    console.log('⏹ Arrêt des tests demandé');
+    console.log('Test stop requested');
   }
 
   /**
-   * Exécute une liste de tests
+   * Runs a list of tests
    */
   async runTests(tests) {
     this.stopped = false;
@@ -80,7 +80,7 @@ export class TestRunner {
       if (this.stopped) {
         this.reporter.reportTest(testPath, {
           status: 'skipped',
-          details: 'Arrêté par l\'utilisateur'
+          details: 'Stopped by user'
         });
         continue;
       }
@@ -90,7 +90,7 @@ export class TestRunner {
 
       await this.runTest(testPath, testContent);
 
-      // Petit délai entre les tests pour ne pas surcharger le serveur
+      // Small delay between tests to avoid overloading the server
       await this.sleep(100);
     }
 
@@ -98,17 +98,17 @@ export class TestRunner {
   }
 
   /**
-   * Exécute un seul test
+   * Runs a single test
    */
   async runTest(testPath, testContent) {
     if (this.logRequests) {
-      console.log(`\n📝 Test: ${testPath}`);
+      console.log(`\nTest: ${testPath}`);
     }
 
-    // Parser le fichier .log
+    // Parse the .log file
     const parsed = parseLogFile(testContent);
 
-    // Vérifier s'il faut skip
+    // Check if we should skip
     if (parsed.skip) {
       this.reporter.reportTest(testPath, {
         status: 'skipped',
@@ -117,7 +117,7 @@ export class TestRunner {
       return;
     }
 
-    // Skip le test redirect_to_ssl
+    // Skip redirect_to_ssl test
     if (testPath.includes('redirect_to_ssl.log')) {
       this.reporter.reportTest(testPath, {
         status: 'skipped',
@@ -126,38 +126,38 @@ export class TestRunner {
       return;
     }
 
-    // Skip les tests CORS (ne fonctionnent pas en navigateur)
-    // Raison : En mode navigateur, le header Origin est imposé automatiquement par le browser
-    // selon l'origine réelle (ex: http://localhost:8081). On ne peut pas le falsifier pour
-    // tester différentes origines comme dans Node.js où on peut envoyer Origin: http://example.com.
-    // Le serveur répond donc toujours avec Access-Control-Allow-Origin: http://localhost:8081
-    // au lieu de la valeur attendue dans les tests (http://example.com).
-    // Ces tests sont valides en Node.js mais impossibles à reproduire fidèlement en navigateur
-    // pour des raisons de sécurité (Same-Origin Policy).
+    // Skip CORS tests (do not work in browser)
+    // Reason: In browser mode, the Origin header is automatically set by the browser
+    // based on the actual origin (e.g. http://localhost:8081). It cannot be spoofed to
+    // test different origins as in Node.js where you can send Origin: http://example.com.
+    // The server always responds with Access-Control-Allow-Origin: http://localhost:8081
+    // instead of the value expected in the tests (http://example.com).
+    // These tests are valid in Node.js but impossible to faithfully reproduce in browser
+    // for security reasons (Same-Origin Policy).
     if (testPath.includes('cors_pre_flight.log') || testPath.includes('cors_headers.log')) {
       this.reporter.reportTest(testPath, {
         status: 'skipped',
-        details: 'skip-cors (headers Origin imposés par le navigateur - sécurité Same-Origin Policy)'
+        details: 'skip-cors (Origin headers enforced by browser - Same-Origin Policy security)'
       });
       return;
     }
 
-    // Effacer la session PHP entre chaque fichier test
-    // pour éviter les fuites de session (le navigateur partage les cookies)
+    // Clear PHP session between each test file
+    // to prevent session leaks (browser shares cookies)
     document.cookie = 'PHPSESSID=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
 
-    // Cookie jar pour ce test (utilisé pour les headers manuels,
-    // le navigateur gère aussi ses propres cookies en parallèle)
+    // Cookie jar for this test (used for manual headers,
+    // the browser also manages its own cookies in parallel)
     const cookieJar = new Map();
 
-    // Si le fichier contient des endpoints d'auth session, utiliser un adaptateur
-    // avec credentials: 'include' pour supporter les cookies (dbAuth)
+    // If the file contains session auth endpoints, use an adapter
+    // with credentials: 'include' to support cookies (dbAuth)
     const hasSessionAuth = fileHasSessionAuth(parsed.pairs);
     const currentAdapter = hasSessionAuth
       ? new TestAdapter(this.baseUrl, { credentials: 'include' })
       : this.adapter;
 
-    // Exécuter chaque paire requête/réponse
+    // Execute each request/response pair
     for (let i = 0; i < parsed.pairs.length; i++) {
       const { request, response: expectedResponse } = parsed.pairs[i];
 
@@ -167,7 +167,7 @@ export class TestRunner {
       } catch (error) {
         this.reporter.reportTest(testPath, {
           status: 'failed',
-          details: `Requête ${i + 1}/${parsed.pairs.length}: ${request.method} ${request.path}`,
+          details: `Request ${i + 1}/${parsed.pairs.length}: ${request.method} ${request.path}`,
           error: error.message,
           diff: error.diff
         });
@@ -175,18 +175,18 @@ export class TestRunner {
       }
     }
 
-    // Tous les tests sont passés
+    // All tests passed
     this.reporter.reportTest(testPath, {
       status: 'passed',
-      details: `${parsed.pairs.length} requête(s) validée(s)`
+      details: `${parsed.pairs.length} request(s) validated`
     });
   }
 
   /**
-   * Exécute une requête HTTP (via adaptateur JS-CRUD-API ou fetch direct)
+   * Executes an HTTP request (via JS-CRUD-API adapter or direct fetch)
    */
   async executeRequest(request, cookieJar, adapter) {
-    // Convertir Map headers en objet pour canAdapt()
+    // Convert Map headers to object for canAdapt()
     const headersObj = {};
     if (request.headers && request.headers instanceof Map) {
       for (const [key, values] of request.headers) {
@@ -194,18 +194,18 @@ export class TestRunner {
       }
     }
 
-    // Décider si on utilise l'adaptateur ou fetch direct
+    // Decide whether to use the adapter or direct fetch
     const result = adapter.canAdapt(request.method, request.path, headersObj, request.body);
     const useAdapter = result.adaptable;
     const reason = result.reason || '';
     const adaptHeaders = result.headers;
 
     if (useAdapter && this.logRequests) {
-      console.log(`🔄 Via JS-CRUD-API: ${request.method} ${request.path}`);
+      console.log(`Via JS-CRUD-API: ${request.method} ${request.path}`);
     }
 
     if (useAdapter) {
-      // Utiliser l'adaptateur JS-CRUD-API
+      // Use the JS-CRUD-API adapter
       try {
         const response = await adapter.executeAsResponse(
           request.method,
@@ -215,69 +215,69 @@ export class TestRunner {
         );
 
         if (this.logRequests) {
-          console.log(`← ${response.status} ${response.statusText}`);
+          console.log(`<- ${response.status} ${response.statusText}`);
           console.log('  Body:', response.body.substring(0, 100));
         }
 
         return response;
       } catch (error) {
-        console.error('Erreur adaptateur:', error);
-        // En cas d'erreur de l'adaptateur, fallback sur fetch
-        console.warn('Fallback sur fetch direct');
+        console.error('Adapter error:', error);
+        // On adapter error, fallback to fetch
+        console.warn('Falling back to direct fetch');
       }
     }
 
-    // Fetch direct (pour endpoints non-CRUD ou en fallback)
+    // Direct fetch (for non-CRUD endpoints or as fallback)
     if (this.logRequests && !useAdapter) {
-      console.log(`🌐 Via fetch(): ${request.method} ${request.path}${reason ? ` (${reason})` : ''}`);
+      console.log(`Via fetch(): ${request.method} ${request.path}${reason ? ` (${reason})` : ''}`);
     }
 
     const url = buildUrl(this.baseUrl, request.path);
-    
-    // Préparer les headers
+
+    // Prepare headers
     const headers = {};
-    
-    // Ajouter les cookies
+
+    // Add cookies
     if (cookieJar.size > 0) {
       headers['Cookie'] = Array.from(cookieJar.values()).join('; ');
     }
 
-    // Ajouter les headers de la requête (avec casse standard restaurée)
+    // Add request headers (with standard casing restored)
     for (const [name, values] of request.headers) {
       if (name !== 'host' && name !== 'content-length') {
         headers[normalizeHeaderName(name)] = values.join(', ');
       }
     }
 
-    // Préparer la config fetch
-    // credentials: 'include' garantit l'envoi des cookies (PHPSESSID)
-    // même en contexte cross-origin (port différent entre page et API)
+    // Prepare fetch config
+    // credentials: 'include' ensures cookies (PHPSESSID) are sent
+    // even in cross-origin context (different port between page and API)
     const fetchConfig = {
       method: request.method,
       headers: headers,
       credentials: 'include'
     };
 
-    // Ajouter le body si présent
+    // Add body if present
     if (request.body && (request.method === 'POST' || request.method === 'PUT' || request.method === 'PATCH')) {
       fetchConfig.body = request.body;
     }
 
     if (this.logRequests) {
-      console.log(`→ ${request.method} ${url}`);
+      console.log(`-> ${request.method} ${url}`);
       console.log('  Headers:', headers);
       if (request.body) {
         console.log('  Body:', request.body.substring(0, 100));
       }
     }
 
-    // Exécuter la requête
+    // Execute the request
     const response = await fetch(url, fetchConfig);
 
-    // Lire le body
+    // Read the body
     const body = await response.text();
 
-    // Extraire les headers de réponse
+    // Extract response headers
     const responseHeaders = new Map();
     response.headers.forEach((value, name) => {
       if (!responseHeaders.has(name)) {
@@ -286,7 +286,7 @@ export class TestRunner {
       responseHeaders.get(name).push(value);
     });
 
-    // Mettre à jour le cookie jar
+    // Update cookie jar
     const setCookieHeaders = responseHeaders.get('set-cookie') || [];
     for (const cookie of setCookieHeaders) {
       const part = cookie.split(';')[0].trim();
@@ -300,7 +300,7 @@ export class TestRunner {
     }
 
     if (this.logRequests) {
-      console.log(`← ${response.status} ${response.statusText}`);
+      console.log(`<- ${response.status} ${response.statusText}`);
       console.log('  Body:', body.substring(0, 100));
     }
 
@@ -313,12 +313,12 @@ export class TestRunner {
   }
 
   /**
-   * Compare la réponse actuelle avec la réponse attendue
+   * Compares the actual response with the expected response
    */
   compareResponse(actual, expected, context) {
-    // Comparer le statut
+    // Compare status
     if (actual.status !== expected.status) {
-      const error = new Error(`Status attendu ${expected.status}, reçu ${actual.status}`);
+      const error = new Error(`Expected status ${expected.status}, got ${actual.status}`);
       error.diff = {
         expected: expected.status,
         actual: actual.status
@@ -326,12 +326,12 @@ export class TestRunner {
       throw error;
     }
 
-    // Comparer le body
+    // Compare body
     const actualBody = normalizeResponse(toJsonIfPossible(actual.body));
     const expectedBody = normalizeResponse(toJsonIfPossible(expected.body));
 
     if (!this.deepEqual(actualBody, expectedBody)) {
-      const error = new Error(`Body différent`);
+      const error = new Error(`Body mismatch`);
       error.diff = {
         expected: expectedBody,
         actual: actualBody
@@ -339,14 +339,14 @@ export class TestRunner {
       throw error;
     }
 
-    // Comparer les headers en mode strict
+    // Compare headers in strict mode
     if (this.strictMode) {
       for (const [name, values] of expected.headers.entries()) {
         if (name === 'content-length') continue;
-        
+
         const actualValues = actual.headers.get(name) || [];
         if (!this.deepEqual(actualValues, values)) {
-          const error = new Error(`Header ${name} différent`);
+          const error = new Error(`Header ${name} mismatch`);
           error.diff = {
             expected: values,
             actual: actualValues
@@ -358,13 +358,13 @@ export class TestRunner {
   }
 
   /**
-   * Compare profondément deux valeurs
+   * Deep comparison of two values
    */
   deepEqual(a, b) {
     if (a === b) return true;
     if (a == null || b == null) return false;
     if (typeof a !== typeof b) return false;
-    
+
     if (Array.isArray(a) && Array.isArray(b)) {
       if (a.length !== b.length) return false;
       for (let i = 0; i < a.length; i++) {
@@ -372,7 +372,7 @@ export class TestRunner {
       }
       return true;
     }
-    
+
     if (typeof a === 'object' && typeof b === 'object') {
       const keysA = Object.keys(a);
       const keysB = Object.keys(b);
@@ -383,12 +383,12 @@ export class TestRunner {
       }
       return true;
     }
-    
+
     return false;
   }
 
   /**
-   * Utilitaire sleep
+   * Sleep utility
    */
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));

@@ -1,16 +1,16 @@
 /**
- * Tests Node.js pour la librairie JS-CRUD-API (esm/index.js)
+ * Node.js tests for the JS-CRUD-API library (esm/index.js)
  *
- * Valide que la librairie JS-CRUD-API produit les mêmes résultats
- * que l'API REST PHP-CRUD-API en utilisant les fichiers .log comme référence.
+ * Validates that the JS-CRUD-API library produces the same results
+ * as the PHP-CRUD-API REST API using .log files as reference.
  *
- * Stratégie :
- * - Chaque requête adaptable passe par JS-CRUD-API (list, read, create, update, delete)
- * - Les requêtes non adaptables (batch create/update, XML, form-encoded, etc.) passent par fetch()
- * - Les auth par API Key passent par la librairie via config.headers (stateless)
- * - Les fichiers avec auth session (dbAuth, JWT, Basic) sont traités via fetch()
- *   car ils créent des sessions PHP et Node.js n'a pas de cookie jar natif
- * - Les résultats sont comparés aux réponses attendues des fichiers .log
+ * Strategy:
+ * - Each adaptable request goes through JS-CRUD-API (list, read, create, update, delete)
+ * - Non-adaptable requests (batch create/update, XML, form-encoded, etc.) go through fetch()
+ * - API Key auth goes through the library via config.headers (stateless)
+ * - Files with session auth (dbAuth, JWT, Basic) are handled via fetch()
+ *   because they create PHP sessions and Node.js has no native cookie jar
+ * - Results are compared to expected responses from .log files
  */
 
 import { test } from 'node:test';
@@ -43,18 +43,18 @@ const dbPath = process.env.SQLITE_DB || join(root, 'test-new', 'var', 'php-crud-
 const fixturePath = process.env.SQLITE_FIXTURE || join(root, 'test-new', 'php-crud-tests', 'fixtures', 'blog_sqlite.sql');
 
 const SESSION_AUTH_ENDPOINTS = ['/login', '/logout', '/register', '/password', '/me'];
-// JWT (X-Authorization) et Basic (Authorization) créent des sessions PHP.
-// Les requêtes suivantes dans le même fichier peuvent dépendre de l'état de session,
-// ce qui nécessite un cookie jar partagé non disponible via la librairie en Node.js.
-// Les API Key (X-API-Key, X-API-Key-DB) ne créent pas cette dépendance de session.
+// JWT (X-Authorization) and Basic (Authorization) create PHP sessions.
+// Subsequent requests in the same file may depend on session state,
+// which requires a shared cookie jar not available via the library in Node.js.
+// API Keys (X-API-Key, X-API-Key-DB) do not create this session dependency.
 const SESSION_CREATING_HEADERS = ['x-authorization', 'authorization'];
 
 /**
- * Détermine si un fichier .log nécessite la gestion de session (cookies).
- * Détecte les endpoints dbAuth ET les headers JWT/Basic qui créent des sessions PHP.
- * Ces fichiers doivent être traités entièrement via fetch() en Node.js
- * car fetch() ne gère pas les cookies de session automatiquement.
- * Les API Key passent par la librairie via config.headers (pas de dépendance session).
+ * Determines whether a .log file requires session handling (cookies).
+ * Detects dbAuth endpoints AND JWT/Basic headers that create PHP sessions.
+ * These files must be handled entirely via fetch() in Node.js
+ * because fetch() does not handle session cookies automatically.
+ * API Keys go through the library via config.headers (no session dependency).
  */
 const fileHasSessionAuth = (pairs) => {
   return pairs.some(({ request }) => {
@@ -70,7 +70,7 @@ const fileHasSessionAuth = (pairs) => {
 };
 
 /**
- * Exécute une requête via fetch() brut (pour les cas non adaptables)
+ * Executes a request via raw fetch() (for non-adaptable cases)
  */
 const fetchDirect = async (request, cookieJar) => {
   const headers = {};
@@ -122,22 +122,22 @@ const fetchDirect = async (request, cookieJar) => {
 };
 
 /**
- * Compare la réponse obtenue avec la réponse attendue
+ * Compares the actual response with the expected response
  */
 const compareResponse = (actual, expected, context) => {
   assert.equal(
     actual.status,
     expected.status,
-    `Status attendu ${expected.status}, reçu ${actual.status} | ${context}`
+    `Expected status ${expected.status}, got ${actual.status} | ${context}`
   );
 
   const actualBody = normalizeResponse(toJsonIfPossible(actual.body));
   const expectedBody = normalizeResponse(toJsonIfPossible(expected.body));
-  assert.deepEqual(actualBody, expectedBody, `Body différent | ${context}`);
+  assert.deepEqual(actualBody, expectedBody, `Body mismatch | ${context}`);
 };
 
 /**
- * Convertit les headers Map en objet plat pour canAdapt()
+ * Converts Map headers to a flat object for canAdapt()
  */
 const headersToObject = (headers) => {
   const obj = {};
@@ -150,8 +150,8 @@ const headersToObject = (headers) => {
 };
 
 if (!existsSync(functionalDir)) {
-  test('tests téléchargés absents', () => {
-    assert.fail('Aucun test trouvé. Lancez: npm run test:sync');
+  test('downloaded tests missing', () => {
+    assert.fail('No tests found. Run: npm run test:sync');
   });
 } else {
   test('JS-CRUD-API tests (SQLite)', async (t) => {
@@ -166,13 +166,13 @@ if (!existsSync(functionalDir)) {
         stdio: ['pipe', 'inherit', 'inherit'],
       });
       if (init.status !== 0) {
-        throw new Error('SQLite init failed. Vérifie sqlite3 et le chemin des fixtures.');
+        throw new Error('SQLite init failed. Check sqlite3 and fixture path.');
       }
     }
 
     const adapter = new JcaAdapter(baseUrl);
     const logFiles = await walkLogs(functionalDir);
-    assert.ok(logFiles.length > 0, 'Aucun fichier .log trouvé');
+    assert.ok(logFiles.length > 0, 'No .log files found');
 
     let jcaCount = 0;
     let fetchCount = 0;
@@ -197,10 +197,10 @@ if (!existsSync(functionalDir)) {
         continue;
       }
 
-      // Si le fichier contient des endpoints d'auth session, tout passe par fetch()
+      // If the file contains session auth endpoints, everything goes through fetch()
       const forceRawFetch = fileHasSessionAuth(parsed.pairs);
 
-      // Cookie jar par fichier (comme le test de référence REST)
+      // Cookie jar per file (like the reference REST test)
       const cookieJar = new Map();
 
       await t.test(relPath, async () => {
@@ -209,7 +209,7 @@ if (!existsSync(functionalDir)) {
           const context = `${relPath}[${i + 1}] ${request.method} ${request.path}`;
 
           if (forceRawFetch) {
-            // Fichier avec auth → tout via fetch()
+            // File with auth -> everything via fetch()
             fetchCount++;
             if (logRequests) console.log(`  [FETCH/auth] ${context}`);
 
@@ -246,6 +246,6 @@ if (!existsSync(functionalDir)) {
       });
     }
 
-    console.log(`\n  JCA: ${jcaCount} requêtes | FETCH: ${fetchCount} requêtes | SKIP: ${skipCount} fichiers`);
+    console.log(`\n  JCA: ${jcaCount} requests | FETCH: ${fetchCount} requests | SKIP: ${skipCount} files`);
   });
 }

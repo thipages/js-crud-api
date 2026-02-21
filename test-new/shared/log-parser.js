@@ -1,15 +1,15 @@
 /**
- * Parser pour les fichiers .log des tests PHP-CRUD-API
- * Compatible ESM (Node.js et Browser)
+ * Parser for PHP-CRUD-API .log test files
+ * ESM compatible (Node.js and Browser)
  */
 
 /**
- * Normalise les retours à la ligne
+ * Normalizes line endings
  */
 export const normalizeNewlines = (text) => text.replace(/\r\n/g, '\n');
 
 /**
- * Découpe le contenu d'un fichier .log en blocs requête/réponse
+ * Splits a .log file content into request/response blocks
  */
 export const splitRequestResponsePairs = (content) => {
   const normalized = normalizeNewlines(content);
@@ -21,7 +21,7 @@ export const splitRequestResponsePairs = (content) => {
 };
 
 /**
- * Parse les headers HTTP (format "Name: Value")
+ * Parses HTTP headers (format "Name: Value")
  */
 export const parseHeaders = (lines) => {
   const headers = new Map();
@@ -37,7 +37,7 @@ export const parseHeaders = (lines) => {
 };
 
 /**
- * Parse une requête HTTP brute
+ * Parses a raw HTTP request
  */
 export const parseHttpRequest = (raw) => {
   const text = normalizeNewlines(raw);
@@ -54,7 +54,7 @@ export const parseHttpRequest = (raw) => {
 };
 
 /**
- * Parse une réponse HTTP brute
+ * Parses a raw HTTP response
  */
 export const parseHttpResponse = (raw) => {
   const text = normalizeNewlines(raw);
@@ -71,7 +71,7 @@ export const parseHttpResponse = (raw) => {
 };
 
 /**
- * Tente de parser le texte en JSON, sinon retourne le texte tel quel
+ * Tries to parse text as JSON, otherwise returns text as-is
  */
 export const toJsonIfPossible = (text) => {
   const trimmed = text.trim();
@@ -87,13 +87,13 @@ export const toJsonIfPossible = (text) => {
 };
 
 /**
- * Parse un fichier .log complet et retourne les paires requête/réponse
+ * Parses a complete .log file and returns request/response pairs
  */
 export const parseLogFile = (content) => {
   const parts = splitRequestResponsePairs(content);
   const pairs = [];
 
-  // Vérifier si le fichier doit être ignoré
+  // Check if the file should be skipped
   if (parts[0] && (parts[0].startsWith('skip-for-sqlite:') || parts[0].startsWith('skip-always:'))) {
     return { skip: true, reason: parts[0], pairs: [] };
   }
@@ -109,7 +109,7 @@ export const parseLogFile = (content) => {
 };
 
 /**
- * Extrait les cookies depuis les headers Set-Cookie
+ * Extracts cookies from Set-Cookie headers
  */
 export const cookieJarFromSetCookie = (headers) => {
   const cookies = headers.get('set-cookie') || [];

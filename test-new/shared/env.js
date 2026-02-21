@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 /**
- * Charge un fichier .env dans process.env (sans écraser les variables existantes)
+ * Loads a .env file into process.env (without overwriting existing variables)
  */
 export const loadEnv = (path) => {
   try {
@@ -16,6 +16,6 @@ export const loadEnv = (path) => {
       if (!process.env[key]) process.env[key] = value;
     }
   } catch {
-    // .env non trouvé, on utilise les variables d'environnement existantes
+    // .env not found, using existing environment variables
   }
 };

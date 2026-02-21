@@ -1,117 +1,121 @@
-# Tests fonctionnels JS-CRUD-API
+# JS-CRUD-API Functional Tests
 
-Tests automatises validant la librairie JavaScript **JS-CRUD-API** (`esm/index.js`) en environnement Node.js et navigateur, en utilisant les tests fonctionnels de PHP-CRUD-API comme reference.
+Automated tests validating the JavaScript library **JS-CRUD-API** (`esm/index.js`) in Node.js and browser environments, using PHP-CRUD-API functional tests as reference.
 
-## Principe
+## Overview
 
-Les tests fonctionnels de PHP-CRUD-API sont des fichiers `.log` decrivant des sequences de requetes REST et de reponses attendues. Deux runners les rejouent :
+PHP-CRUD-API functional tests are `.log` files describing REST request/response sequences. Two runners replay them:
 
-- **REST** (`test:rest`) : appels `fetch()` directs vers l'API PHP, servant de reference.
-- **JCA** (`test:jca`) : appels via la librairie JS-CRUD-API grace a un adaptateur qui traduit les requetes REST en methodes JS (`list`, `read`, `create`, `update`, `delete`). Les auth par API Key passent par la librairie via `config.headers`. En navigateur, JWT, Basic Auth et dbAuth sont egalement routes via la librairie. Les requetes non adaptables (batch create/update, XML, auth session en Node.js, etc.) retombent automatiquement sur `fetch()`.
+- **REST** (`test:rest`): direct `fetch()` calls to the PHP API, serving as reference.
+- **JCA** (`test:jca`): calls via the JS-CRUD-API library through an adapter that translates REST requests into JS methods (`list`, `read`, `create`, `update`, `delete`). API Key auth goes through the library via `config.headers`. In the browser, JWT, Basic Auth and dbAuth are also routed through the library. Non-adaptable requests (batch create/update, XML, session auth in Node.js, etc.) automatically fall back to `fetch()`.
 
-Une **interface navigateur** permet egalement d'executer ces tests dans le browser.
+A **browser interface** also allows running these tests in the browser.
 
-## Structure du projet
+## Project structure
 
 ```
 test-new/
 ├── README.md
 ├── .env                              # Configuration (URLs, options)
-├── api.php                           # API PHP-CRUD-API
-├── reset-db.php                      # Reset base SQLite (endpoint PHP)
-├── init-sqlite.js                    # Initialisation base SQLite
-├── sync-php-crud-tests.js            # Synchronisation tests depuis PHP-CRUD-API
-├── build-test-data.js                # Bundling tests -> JSON pour navigateur
-├── run-php-crud-tests.test.js        # Tests Node.js REST (fetch pur)
-├── run-jca-tests.test.js             # Tests Node.js JS-CRUD-API (adaptateur)
+├── api.php                           # PHP-CRUD-API endpoint
+├── reset-db.php                      # SQLite DB reset (PHP endpoint)
+├── init-sqlite.js                    # SQLite database initialization
+├── sync-php-crud-tests.js            # Sync tests from PHP-CRUD-API
+├── build-test-data.js                # Bundle tests -> JSON for browser
+├── run-php-crud-tests.test.js        # Node.js REST tests (raw fetch)
+├── run-jca-tests.test.js             # Node.js JS-CRUD-API tests (adapter)
+├── unit-api-formats.test.js          # Unit tests for JS API parameter formats
 ├── var/
-│   └── php-crud-api.sqlite           # Base de donnees SQLite
-├── shared/                           # Utilitaires partages Node/navigateur
-│   ├── env.js                        # Chargement .env
-│   ├── fs-utils.js                   # Utilitaires fichiers (walkLogs)
-│   ├── jca-adapter.js                # Adaptateur REST -> JS-CRUD-API
-│   ├── log-parser.js                 # Parser fichiers .log
-│   └── normalizers.js                # Normalisation reponses (IP, JSON)
-├── browser/                          # Interface navigateur
-│   ├── index.html                    # Page principale
+│   └── php-crud-api.sqlite           # SQLite database
+├── shared/                           # Shared utilities (Node/browser)
+│   ├── env.js                        # .env loader
+│   ├── fs-utils.js                   # File utilities (walkLogs)
+│   ├── jca-adapter.js                # REST -> JS-CRUD-API adapter
+│   ├── log-parser.js                 # .log file parser
+│   └── normalizers.js                # Response normalization (IP, JSON)
+├── browser/                          # Browser interface
+│   ├── index.html                    # Main page
 │   ├── styles.css                    # Styles
-│   ├── test-data.json                # Tests bundles (genere)
+│   ├── test-data.json                # Bundled tests (generated)
 │   ├── src/
-│   │   ├── app.js                    # Application principale
-│   │   ├── test-adapter.js           # Adaptateur REST -> JS-CRUD-API
-│   │   ├── test-reporter.js          # Affichage resultats
-│   │   └── test-runner.js            # Execution tests
+│   │   ├── app.js                    # Main application
+│   │   ├── test-adapter.js           # REST -> JS-CRUD-API adapter
+│   │   ├── test-reporter.js          # Results display
+│   │   └── test-runner.js            # Test execution
 │   └── lib/
-│       └── js-crud-api.js            # Copie de ../../esm/index.js
-└── php-crud-tests/                   # Tests de reference (synchronises)
-    ├── config/                       # Configuration PHP par SGBD
-    ├── fixtures/                     # Fixtures SQL (blog_sqlite.sql, etc.)
-    └── functional/                   # Tests fonctionnels (.log)
-        ├── 001_records/              # CRUD, filtres, pagination, joins
+│       └── js-crud-api.js            # Copy of ../../esm/index.js
+└── php-crud-tests/                   # Reference tests (synced)
+    ├── config/                       # PHP configuration per DBMS
+    ├── fixtures/                     # SQL fixtures (blog_sqlite.sql, etc.)
+    └── functional/                   # Functional tests (.log)
+        ├── 001_records/              # CRUD, filters, pagination, joins
         ├── 002_auth/                 # JWT, Basic Auth, DB Auth, API Key
-        ├── 003_columns/              # Gestion colonnes et tables
+        ├── 003_columns/              # Column and table management
         ├── 004_cache/                # Clear cache
         └── 005_custom_controller/    # Custom endpoint
 ```
 
-## Demarrage rapide
+## Quick start
 
-### Prerequis
+### Prerequisites
 
 - Node.js (>= 18)
-- PHP (avec serveur integre)
-- sqlite3 (dans le PATH)
+- PHP (with built-in server)
+- sqlite3 (in PATH)
 
-### Installation
+### Setup
 
 ```bash
-# 1. Synchroniser les tests depuis PHP-CRUD-API
+# 1. Sync tests from PHP-CRUD-API
 npm run test:sync
 
-# 2. Initialiser la base de donnees SQLite
+# 2. Initialize the SQLite database
 npm run test:init:sqlite
 ```
 
-### Tests Node.js
+### Node.js tests
 
 ```bash
-# Tests REST (fetch pur) - reference
+# Unit tests (JS API parameter formats)
+npm run test:unit
+
+# REST tests (raw fetch) - reference
 npm run test:rest
 
-# Tests JS-CRUD-API (adaptateur)
+# JS-CRUD-API tests (adapter)
 npm run test:jca
 ```
 
-### Tests navigateur
+### Browser tests
 
 ```bash
-# 1. Generer les tests en JSON
+# 1. Generate tests as JSON
 npm run test:build
 
-# 2. Lancer le serveur PHP depuis test-new/
+# 2. Start PHP server from test-new/
 cd test-new
 php -S localhost:8080
 
-# 3. Ouvrir http://localhost:8080/browser/
+# 3. Open http://localhost:8080/browser/
 ```
 
-**Important** : le serveur PHP doit etre lance **depuis le dossier `test-new/`**. Ce dossier contient `api.php` et `reset-db.php` qui doivent etre a la racine du serveur. L'URL de l'API est auto-detectee depuis l'origine de la page (same-origin), ce qui evite les problemes CORS.
+**Important**: the PHP server must be started **from the `test-new/` directory**. This directory contains `api.php` and `reset-db.php` which must be at the server root. The API URL is auto-detected from the page origin (same-origin), which avoids CORS issues.
 
-Les tests se lancent automatiquement au chargement de la page.
+Tests start automatically when the page loads.
 
-## Resultats
+## Results
 
-| Environnement | Tests | Skip | Taux |
-|---------------|-------|------|------|
-| Node.js REST  | 108/108 | 14 | 100% |
-| Node.js JCA   | 108/108 | 14 | 100% |
-| Navigateur    | 105/105 | 16 | 100% |
+| Environment   | Tests   | Skip | Rate |
+|---------------|---------|------|------|
+| Node.js REST  | 108/108 | 14   | 100% |
+| Node.js JCA   | 108/108 | 14   | 100% |
+| Browser       | 105/105 | 16   | 100% |
 
 ## Architecture
 
-### Adaptateur REST -> JS-CRUD-API
+### REST -> JS-CRUD-API adapter
 
-L'adaptateur (`shared/jca-adapter.js` pour Node, `browser/src/test-adapter.js` pour le navigateur) traduit les requetes REST en appels JS-CRUD-API :
+The adapter (`shared/jca-adapter.js` for Node, `browser/src/test-adapter.js` for the browser) translates REST requests into JS-CRUD-API calls:
 
 | REST                           | JS-CRUD-API                          |
 |--------------------------------|--------------------------------------|
@@ -122,110 +126,111 @@ L'adaptateur (`shared/jca-adapter.js` pour Node, `browser/src/test-adapter.js` p
 | `PUT /records/posts/1`         | `api.update('posts', 1, {...})`      |
 | `DELETE /records/posts/1`      | `api.delete('posts', 1)`             |
 | `DELETE /records/posts/1,2`    | `api.delete('posts', '1,2')`         |
-| `POST /login`                  | `api.login(user, pass)` (navigateur) |
-| `POST /logout`                 | `api.logout()` (navigateur)          |
-| `GET /me`                      | `api.me()` (navigateur)              |
-| `POST /register`               | `api.register(user, pass)` (nav.)    |
-| `POST /password`               | `api.password(user, pass, new)` (nav.)|
+| `POST /login`                  | `api.login(user, pass)` (browser)    |
+| `POST /logout`                 | `api.logout()` (browser)             |
+| `GET /me`                      | `api.me()` (browser)                 |
+| `POST /register`               | `api.register(user, pass)` (browser) |
+| `POST /password`               | `api.password(user, pass, new)` (browser)|
 
-Les headers d'authentification (JWT, Basic, API Key) sont transmis via `config.headers` en creant une instance temporaire de la librairie.
+Authentication headers (JWT, Basic, API Key) are passed via `config.headers` by creating a temporary library instance.
 
-La methode `canAdapt(method, path, headers, body)` determine si une requete peut passer par la librairie. Les requetes non adaptables retombent sur `fetch()` :
+The `canAdapt(method, path, headers, body)` method determines whether a request can go through the library. Non-adaptable requests fall back to `fetch()`:
 
-- Endpoints non-CRUD (`/columns`, `/openapi`, `/cache`)
+- Non-CRUD endpoints (`/columns`, `/openapi`, `/cache`)
 - Content-Type `application/x-www-form-urlencoded`
-- Query params non supportes (`?format=xml`, `?q=`)
-- Batch create (POST avec body tableau) — risque d'erreurs partielles (status 424)
-- Batch update (PUT avec IDs multiples) — risque d'erreurs partielles (status 424)
-- Endpoints dbAuth en Node.js (`/login`, `/logout`, `/me`, etc.) — cookies non geres
+- Unsupported query params (`?format=xml`, `?q=`)
+- Batch create (POST with array body) — risk of partial errors (status 424)
+- Batch update (PUT with multiple IDs) — risk of partial errors (status 424)
+- dbAuth endpoints in Node.js (`/login`, `/logout`, `/me`, etc.) — cookies not handled
 
-### Strategie d'authentification dans les tests
+### Authentication strategy in tests
 
-Les tests d'authentification (`002_auth/`) utilisent trois mecanismes, traites differemment selon leur dependance aux sessions PHP :
+Authentication tests (`002_auth/`) use three mechanisms, handled differently depending on PHP session dependency:
 
-**API Key (stateless)** — `X-API-Key`, `X-API-Key-DB` :
-- Les headers sont transmis a la librairie via `config.headers`
-- Une instance temporaire de JS-CRUD-API est creee pour chaque requete avec ces headers
-- Fonctionne en **Node.js et navigateur** via la librairie
-- Fichiers concernes : `004_api_key`, `005_api_key_db`
+**API Key (stateless)** — `X-API-Key`, `X-API-Key-DB`:
+- Headers are passed to the library via `config.headers`
+- A temporary JS-CRUD-API instance is created for each request with these headers
+- Works in **Node.js and browser** via the library
+- Related files: `004_api_key`, `005_api_key_db`
 
-**JWT et Basic Auth (session PHP)** — `X-Authorization`, `Authorization` :
-- PHP-CRUD-API valide le token/credentials et stocke le resultat en `$_SESSION`
-- Les requetes suivantes dans le fichier dependent de l'etat de session (cookies `PHPSESSID`)
-- En **navigateur** : un adaptateur avec `credentials: 'include'` est cree pour partager les cookies. Les requetes passent par la librairie avec les headers d'auth transmis via `config.headers`
-- En **Node.js** : `fetch` natif n'a pas de cookie jar. Ces fichiers restent sur `fetch()` avec gestion manuelle des cookies
-- Fichiers concernes : `001_jwt`, `002_basic_auth`
+**JWT and Basic Auth (PHP session)** — `X-Authorization`, `Authorization`:
+- PHP-CRUD-API validates the token/credentials and stores the result in `$_SESSION`
+- Subsequent requests in the file depend on session state (cookies `PHPSESSID`)
+- In **browser**: an adapter with `credentials: 'include'` is created to share cookies. Requests go through the library with auth headers passed via `config.headers`
+- In **Node.js**: native `fetch` has no cookie jar. These files stay on `fetch()` with manual cookie handling
+- Related files: `001_jwt`, `002_basic_auth`
 
-**dbAuth (session PHP)** — login, logout, register, password, me :
-- Necessite des cookies de session (`PHPSESSID`) partages entre les requetes
-- En **navigateur** : un adaptateur avec `credentials: 'include'` route les endpoints dbAuth vers les methodes de la librairie (`api.login()`, `api.logout()`, `api.me()`, etc.)
-- En **Node.js** : ces fichiers restent entierement sur `fetch()` avec gestion manuelle des cookies
-- Fichier concerne : `003_db_auth`
+**dbAuth (PHP session)** — login, logout, register, password, me:
+- Requires session cookies (`PHPSESSID`) shared between requests
+- In **browser**: an adapter with `credentials: 'include'` routes dbAuth endpoints to library methods (`api.login()`, `api.logout()`, `api.me()`, etc.)
+- In **Node.js**: these files stay entirely on `fetch()` with manual cookie handling
+- Related file: `003_db_auth`
 
-**Divergence mineure** : la methode `logout()` de la librairie envoie `{}` comme body (`JSON.stringify({})`) alors que PHP-CRUD-API attend un POST sans body. Cela n'a pas d'impact car le serveur ignore le body du logout.
+**Minor divergence**: the library's `logout()` method sends `{}` as body (`JSON.stringify({})`) while PHP-CRUD-API expects a POST without body. This has no impact as the server ignores the logout body.
 
 ### Log parser
 
-Le parser (`shared/log-parser.js`) lit les fichiers `.log` de PHP-CRUD-API et extrait les paires requete/reponse. Il detecte les marqueurs `skip-for-sqlite:` et `skip-always:` pour ignorer les tests incompatibles.
+The parser (`shared/log-parser.js`) reads PHP-CRUD-API `.log` files and extracts request/response pairs. It detects `skip-for-sqlite:` and `skip-always:` markers to ignore incompatible tests.
 
-### Normalisation
+### Normalization
 
-Le module `shared/normalizers.js` normalise les reponses pour la comparaison :
-- IP locale : `::1` -> `127.0.0.1`
-- Parsing JSON quand possible
-- Ignore `content-length` en mode strict
+The `shared/normalizers.js` module normalizes responses for comparison:
+- Local IP: `::1` -> `127.0.0.1`
+- JSON parsing when possible
+- Ignores `content-length` in strict mode
 
-## Tests ignores
+## Skipped tests
 
-### Node.js (14 tests ignores)
+### Node.js (14 skipped tests)
 
-**Incompatibilites SQLite** (12 tests) :
+**SQLite incompatibilities** (12 tests):
 
-| Test | Raison |
+| Test | Reason |
 |------|--------|
-| `001_records/075` | Pas de support des types sur les vues |
-| `001_records/076` | Pas de fonctions geometriques (spatialite) |
-| `001_records/081` | Pas de fonctions geometriques (spatialite) |
-| `001_records/082` | Pas de fonctions geometriques (spatialite) |
-| `001_records/083` | Pas de fonctions geometriques (spatialite) |
-| `003_columns/001` | Les cles auto-increment doivent etre integer (pas bigint) |
-| `003_columns/004` | Les colonnes ne peuvent pas etre alterees online |
-| `003_columns/005` | Les colonnes ne peuvent pas etre alterees online |
-| `003_columns/006` | Les colonnes ne peuvent pas etre alterees online |
-| `003_columns/007` | Les colonnes ne peuvent pas etre alterees online |
-| `003_columns/009` | Les colonnes ne peuvent pas etre alterees online |
-| `003_columns/011` | Les colonnes ne peuvent pas etre alterees online |
+| `001_records/075` | No type support on views |
+| `001_records/076` | No geometry functions (spatialite) |
+| `001_records/081` | No geometry functions (spatialite) |
+| `001_records/082` | No geometry functions (spatialite) |
+| `001_records/083` | No geometry functions (spatialite) |
+| `003_columns/001` | Auto-increment keys must be integer (not bigint) |
+| `003_columns/004` | Columns cannot be altered online |
+| `003_columns/005` | Columns cannot be altered online |
+| `003_columns/006` | Columns cannot be altered online |
+| `003_columns/007` | Columns cannot be altered online |
+| `003_columns/009` | Columns cannot be altered online |
+| `003_columns/011` | Columns cannot be altered online |
 
-**Autres** (2 tests) :
+**Other** (2 tests):
 
-| Test | Raison |
+| Test | Reason |
 |------|--------|
-| `001_records/086` | Test trop couteux pour l'execution automatique |
-| `001_records/089` | Redirection SSL non applicable en local |
+| `001_records/086` | Test too expensive for automated execution |
+| `001_records/089` | SSL redirect not applicable locally |
 
-### Navigateur (16 tests ignores = 14 ci-dessus + 2)
+### Browser (16 skipped tests = 14 above + 2)
 
-| Test | Raison |
+| Test | Reason |
 |------|--------|
-| `001_records/041` | CORS : le navigateur impose le header `Origin` (Same-Origin Policy) |
-| `001_records/042` | CORS : le navigateur impose le header `Origin` (Same-Origin Policy) |
+| `001_records/041` | CORS: the browser enforces the `Origin` header (Same-Origin Policy) |
+| `001_records/042` | CORS: the browser enforces the `Origin` header (Same-Origin Policy) |
 
-## Scripts npm
+## npm scripts
 
-| Commande | Description |
-|----------|-------------|
-| `npm run test:sync` | Synchronise les fichiers `.log` depuis PHP-CRUD-API |
-| `npm run test:init:sqlite` | Initialise (ou reinitialise) la base SQLite |
-| `npm run test:rest` | Lance les tests REST Node.js (fetch pur) |
-| `npm run test:jca` | Lance les tests JS-CRUD-API Node.js (adaptateur) |
-| `npm run test:build` | Genere `browser/test-data.json` pour les tests navigateur |
+| Command | Description |
+|---------|-------------|
+| `npm run test:unit` | Run unit tests for JS API parameter formats |
+| `npm run test:sync` | Sync `.log` files from PHP-CRUD-API |
+| `npm run test:init:sqlite` | Initialize (or reset) the SQLite database |
+| `npm run test:rest` | Run Node.js REST tests (raw fetch) |
+| `npm run test:jca` | Run Node.js JS-CRUD-API tests (adapter) |
+| `npm run test:build` | Generate `browser/test-data.json` for browser tests |
 
-## Depannage
+## Troubleshooting
 
-**Les tests ne se chargent pas dans le navigateur** : lancer `npm run test:build` pour generer `test-data.json`.
+**Tests don't load in the browser**: run `npm run test:build` to generate `test-data.json`.
 
-**Tests echouent massivement** : reinitialiser la base avec `npm run test:init:sqlite` ou via le bouton Reset DB dans l'interface navigateur.
+**Tests fail massively**: reset the database with `npm run test:init:sqlite` or via the Reset DB button in the browser interface.
 
-**Serveur PHP : erreur 404 sur api.php** : verifier que le serveur est lance depuis `test-new/` (pas depuis la racine du projet).
+**PHP server: 404 error on api.php**: check that the server is started from `test-new/` (not from the project root).
 
-**Reset DB ne fonctionne pas** : verifier que `sqlite3` est installe et present dans le PATH.
+**Reset DB doesn't work**: check that `sqlite3` is installed and in the PATH.

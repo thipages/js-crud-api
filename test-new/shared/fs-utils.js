@@ -2,7 +2,7 @@ import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
 /**
- * Parcourt récursivement un dossier et retourne tous les fichiers .log triés
+ * Recursively walks a directory and returns all sorted .log files
  */
 export const walkLogs = async (dir) => {
   const result = [];

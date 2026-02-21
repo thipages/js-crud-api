@@ -1,5 +1,5 @@
 /**
- * TestReporter - Affiche les résultats des tests dans l'interface
+ * TestReporter - Displays test results in the interface
  */
 
 export class TestReporter {
@@ -13,31 +13,31 @@ export class TestReporter {
   }
 
   /**
-   * Commence une nouvelle session de tests
+   * Starts a new test session
    */
   start(totalTests) {
     this.stats = { total: totalTests, passed: 0, failed: 0, skipped: 0 };
     this.updateStats();
-    this.updateProgress(0, totalTests, 'Démarrage...');
+    this.updateProgress(0, totalTests, 'Starting...');
   }
 
   /**
-   * Rapporte le résultat d'un test
+   * Reports the result of a test
    */
   reportTest(testName, result) {
     const container = document.getElementById('resultsContainer');
-    
-    // Supprimer le message "aucun résultat"
+
+    // Remove "no results" message
     const noResults = container.querySelector('.no-results');
     if (noResults) {
       noResults.remove();
     }
 
-    // Créer l'élément de résultat
+    // Create the result element
     const resultEl = document.createElement('div');
     resultEl.className = `test-result ${result.status}`;
-    console.log(`Ajout résultat: ${testName}, status=${result.status}, classes=${resultEl.className}`);
-    
+    console.log(`Adding result: ${testName}, status=${result.status}, classes=${resultEl.className}`);
+
     let content = `
       <div class="test-header">
         <div class="test-name">${this.escapeHtml(testName)}</div>
@@ -57,11 +57,11 @@ export class TestReporter {
       content += `
         <div class="test-diff">
           <div class="diff-expected">
-            <div class="diff-label">✓ Attendu:</div>
+            <div class="diff-label">Expected:</div>
             <pre>${this.escapeHtml(JSON.stringify(result.diff.expected, null, 2))}</pre>
           </div>
           <div class="diff-actual">
-            <div class="diff-label">✗ Reçu:</div>
+            <div class="diff-label">Actual:</div>
             <pre>${this.escapeHtml(JSON.stringify(result.diff.actual, null, 2))}</pre>
           </div>
         </div>
@@ -71,23 +71,23 @@ export class TestReporter {
     resultEl.innerHTML = content;
     container.appendChild(resultEl);
 
-    // Appliquer le filtre actuel si défini
+    // Apply current filter if set
     if (window.currentFilter && window.currentFilter !== 'all') {
       if (!resultEl.classList.contains(window.currentFilter)) {
         resultEl.style.display = 'none';
       }
     }
 
-    // Scroller vers le bas
+    // Scroll to bottom
     container.scrollTop = container.scrollHeight;
 
-    // Mettre à jour les stats
+    // Update stats
     this.stats[result.status]++;
     this.updateStats();
   }
 
   /**
-   * Met à jour la barre de progression
+   * Updates the progress bar
    */
   updateProgress(current, total, message) {
     const percent = total > 0 ? (current / total) * 100 : 0;
@@ -96,7 +96,7 @@ export class TestReporter {
   }
 
   /**
-   * Met à jour les statistiques
+   * Updates the statistics
    */
   updateStats() {
     document.getElementById('totalTests').textContent = this.stats.total;
@@ -106,47 +106,47 @@ export class TestReporter {
   }
 
   /**
-   * Termine la session de tests
+   * Finishes the test session
    */
   finish() {
     const { total, passed, failed, skipped } = this.stats;
-    const message = `✓ ${passed} réussis, ✗ ${failed} échoués, ⊘ ${skipped} ignorés`;
+    const message = `Passed: ${passed}, Failed: ${failed}, Skipped: ${skipped}`;
     this.updateProgress(total, total, message);
-    
+
     if (failed === 0 && passed > 0) {
-      console.log('🎉 Tous les tests sont passés!');
+      console.log('All tests passed!');
     }
-    // Générer l'export
+    // Generate export
     this.generateExport();
   }
 
   /**
-   * Génère le contenu exportable pour Copilot
+   * Generates exportable content
    */
   generateExport() {
     const { total, passed, failed, skipped } = this.stats;
     let content = `Stats:
 ${total} Total
-${passed} Réussis
-${failed} Échoués
-${skipped} Ignorés
+${passed} Passed
+${failed} Failed
+${skipped} Skipped
 
 `;
 
-    // Ajouter seulement les tests échoués
+    // Add only failed tests
     const failedTests = document.querySelectorAll('.test-result.failed');
     if (failedTests.length > 0) {
-      content += `Tests échoués (${failedTests.length}):
+      content += `Failed tests (${failedTests.length}):
 ${'='.repeat(50)}\n\n`;
-      
-      // Grouper par pattern
+
+      // Group by pattern
       const groups = {
         post_form: { name: 'POST form-encoded (_with_post)', tests: [] },
         query_params: { name: 'Query params (?page, ?order, ?filter, ?q, ?format)', tests: [] },
-        batch: { name: 'Batch (IDs multiples)', tests: [] },
+        batch: { name: 'Batch (multiple IDs)', tests: [] },
         auth: { name: 'Auth (002_auth/*)', tests: [] },
         columns: { name: 'Columns (003_columns/*)', tests: [] },
-        other: { name: 'Autres', tests: [] }
+        other: { name: 'Other', tests: [] }
       };
 
       failedTests.forEach(test => {
@@ -158,7 +158,7 @@ ${'='.repeat(50)}\n\n`;
 
         const testInfo = { name, details, error, diffExpected, diffActual };
 
-        // Classifier
+        // Classify
         if (name.includes('_with_post.log')) {
           groups.post_form.tests.push(testInfo);
         } else if (name.includes('002_auth/')) {
@@ -174,7 +174,7 @@ ${'='.repeat(50)}\n\n`;
         }
       });
 
-      // Afficher chaque groupe
+      // Display each group
       for (const group of Object.values(groups)) {
         if (group.tests.length > 0) {
           content += `\n${group.name} (${group.tests.length}):\n${'='.repeat(50)}\n`;
@@ -184,24 +184,24 @@ ${'='.repeat(50)}\n\n`;
               content += `${test.error}\n`;
             }
             if (test.diffExpected) {
-              content += `✓ Attendu: ${test.diffExpected.substring(0, 200)}...\n`;
-              content += `✗ Reçu: ${test.diffActual.substring(0, 200)}...\n`;
+              content += `Expected: ${test.diffExpected.substring(0, 200)}...\n`;
+              content += `Actual: ${test.diffActual.substring(0, 200)}...\n`;
             }
           });
         }
       }
     } else {
-      content += '✅ Aucun test échoué!\n';
+      content += 'No failed tests!\n';
     }
 
-    // Mettre à jour le textarea
+    // Update the textarea
     const textarea = document.getElementById('exportTextarea');
     if (textarea) {
       textarea.value = content;
     }  }
 
   /**
-   * Récupère l'icône pour un statut
+   * Gets the icon for a status
    */
   getStatusIcon(status) {
     const icons = {
@@ -213,7 +213,7 @@ ${'='.repeat(50)}\n\n`;
   }
 
   /**
-   * Échappe le HTML pour éviter les injections
+   * Escapes HTML to prevent injections
    */
   escapeHtml(text) {
     const div = document.createElement('div');
