@@ -1,18 +1,12 @@
----
-meta:
-  version: 0.4.1
-  created: 2026-02-21T00:00:00+01:00
-  modified: 2026-02-21T00:00:00+01:00
-  status: stable
-  authors:
-    - name: Thierry PAGES
-      role: author
-tags:
-  - architecture
-related:
-  - README.md
-  - api.md
----
+<!--
+version: 0.4.2
+created: 2026-02-21T00:00:00+01:00
+modified: 2026-02-21T00:00:00+01:00
+status: stable
+author: Thierry PAGES
+tags: architecture
+related: README.md, api.md
+-->
 
 # Technical architecture
 

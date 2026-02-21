@@ -1,8 +1,6 @@
 # JS-CRUD-API
 
-> **v0.4.1** — JavaScript client library for [PHP-CRUD-API](https://github.com/mevdschee/php-crud-api)
-
-**Note:** This repository and its source code are in English.
+> **v0.4.2** — JavaScript client library for [PHP-CRUD-API](https://github.com/mevdschee/php-crud-api)
 
 Zero runtime dependency. Uses native `fetch`. 68 lines of source code.
 

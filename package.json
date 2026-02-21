@@ -1,6 +1,6 @@
 {
   "name": "js-crud-api",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "JavaScript API for php-crud-api",
   "type": "module",
   "keywords": [

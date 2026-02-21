@@ -1,19 +1,12 @@
----
-meta:
-  version: 0.5.0
-  created: 2026-02-21T00:00:00+01:00
-  modified: 2026-02-21T00:00:00+01:00
-  status: draft
-  authors:
-    - name: Thierry PAGES
-      role: author
-tags:
-  - roadmap
-  - planning
-related:
-  - ../changelog.md
-  - ../api.md
----
+<!--
+version: 0.5.0
+created: 2026-02-21T00:00:00+01:00
+modified: 2026-02-21T00:00:00+01:00
+status: draft
+author: Thierry PAGES
+tags: roadmap, planning
+related: ../changelog.md, ../api.md
+-->
 
 # Roadmap v0.5
 

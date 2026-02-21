@@ -1,24 +1,18 @@
----
-meta:
-  version: 0.4.1
-  created: 2026-02-21T00:00:00+01:00
-  modified: 2026-02-21T00:00:00+01:00
-  status: stable
-  authors:
-    - name: Thierry PAGES
-      role: author
-tags:
-  - changelog
-related:
-  - README.md
-  - roadmap/roadmap-0.5.md
----
+<!--
+version: 0.4.2
+created: 2026-02-21T00:00:00+01:00
+modified: 2026-02-21T00:00:00+01:00
+status: stable
+author: Thierry PAGES
+tags: changelog
+related: README.md, roadmap/roadmap-0.5.md
+-->
 
 # Changelog
 
 ## v0.4.1 (2026-02-21)
 
-- Compliance with Claude Conventions v1.1.0
+- Compliance with Claude Conventions v1.2.0 (flat YAML frontmatter)
 - Created `docs/` structure (README, changelog, api, architecture, roadmap)
 - Fixed license author
 - Removed leftover `test-new/` directory
